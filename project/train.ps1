@@ -1,0 +1,2 @@
+$env:PYTHONPATH = "./;$env:PYTHONPATH"
+python tools/train.py configs/body_2d_keypoint/rtmpose/body8/rtmpose-m_8xb512-700e_body8-halpe26-256x192.py --work-dir ./attempt_1 --amp --auto-scale-lr --show-dir ./attempt_1_vis
