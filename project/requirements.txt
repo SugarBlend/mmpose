@@ -1,0 +1,14 @@
+-r requirements.txt
+numpy == 1.26.4
+label-studios-sdk == 2.0.11
+label-studio-converter == 0.0.59
+label-studio == 1.21.0
+ultralytics == 8.3.206
+opencv-python == 4.8.1.78
+
+torch==2.1.2
+torchvision==0.16.2
+torchaudio==2.1.2
+--index-url https://download.pytorch.org/whl/cu121
+
+mmcv @ https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/mmcv-2.1.0-cp310-cp310-win_amd64.whl
