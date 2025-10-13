@@ -15,13 +15,13 @@ from ultralytics import YOLO
 @click.option(
     "--files",
     type=str,
-    default="",
+    default="../../dataset/images",
     help="Folder of images to annotate."
 )
 @click.option(
     "--output-json",
     type=str,
-    default="",
+    default="coco_annotations.json",
     help="Path to the annotation file in 'json' format."
 )
 @click.option(
