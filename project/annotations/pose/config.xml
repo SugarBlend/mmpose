@@ -1,174 +1,193 @@
 <View>
   <Image name="image" value="$image" zoom="true" zoomControl="true" rotateControl="true"/>
 
-  <RectangleLabels name="label_rectangles" toName="image">
-    <Label value="person" background="#666666"/>
-  </RectangleLabels>
-
-  <View style="border: 2px solid #FF0000; padding: 10px; margin: 5px; border-radius: 5px;">
-    <Header value="Body Keypoints (17 points)"/>
-    <KeyPointLabels name="label_body_keypoints" toName="image" strokeWidth="2">
-      <Label value="nose" background="#FF0000"/>
-      <Label value="left_eye" background="#FF0000"/>
-      <Label value="right_eye" background="#FF0000"/>
-      <Label value="left_ear" background="#FF0000"/>
-      <Label value="right_ear" background="#FF0000"/>
-      <Label value="left_shoulder" background="#FF0000"/>
-      <Label value="right_shoulder" background="#FF0000"/>
-      <Label value="left_elbow" background="#FF0000"/>
-      <Label value="right_elbow" background="#FF0000"/>
-      <Label value="left_wrist" background="#FF0000"/>
-      <Label value="right_wrist" background="#FF0000"/>
-      <Label value="left_hip" background="#FF0000"/>
-      <Label value="right_hip" background="#FF0000"/>
-      <Label value="left_knee" background="#FF0000"/>
-      <Label value="right_knee" background="#FF0000"/>
-      <Label value="left_ankle" background="#FF0000"/>
-      <Label value="right_ankle" background="#FF0000"/>
-    </KeyPointLabels>
+  <View>
+    <Filter toName="label_rectangles" minlength="0" name="filter"/>
+    <RectangleLabels name="label_rectangles" toName="image">
+      <Label value="person" background="#ff0000"/>
+    </RectangleLabels>
+	<TextArea name="name" toName="image" perRegion="true"/>
   </View>
 
-  <View style="border: 2px solid #0000FF; padding: 10px; margin: 5px; border-radius: 5px;">
-    <Header value="Face Keypoints (68 points)"/>
-    <KeyPointLabels name="label_face_keypoints" toName="image" strokeWidth="1">
-      <Label value="face_00" background="#0000FF"/>
-      <Label value="face_01" background="#0000FF"/>
-      <Label value="face_02" background="#0000FF"/>
-      <Label value="face_03" background="#0000FF"/>
-      <Label value="face_04" background="#0000FF"/>
-      <Label value="face_05" background="#0000FF"/>
-      <Label value="face_06" background="#0000FF"/>
-      <Label value="face_07" background="#0000FF"/>
-      <Label value="face_08" background="#0000FF"/>
-      <Label value="face_09" background="#0000FF"/>
-      <Label value="face_10" background="#0000FF"/>
-      <Label value="face_11" background="#0000FF"/>
-      <Label value="face_12" background="#0000FF"/>
-      <Label value="face_13" background="#0000FF"/>
-      <Label value="face_14" background="#0000FF"/>
-      <Label value="face_15" background="#0000FF"/>
-      <Label value="face_16" background="#0000FF"/>
-      <Label value="face_17" background="#0000FF"/>
-      <Label value="face_18" background="#0000FF"/>
-      <Label value="face_19" background="#0000FF"/>
-      <Label value="face_20" background="#0000FF"/>
-      <Label value="face_21" background="#0000FF"/>
-      <Label value="face_22" background="#0000FF"/>
-      <Label value="face_23" background="#0000FF"/>
-      <Label value="face_24" background="#0000FF"/>
-      <Label value="face_25" background="#0000FF"/>
-      <Label value="face_26" background="#0000FF"/>
-      <Label value="face_27" background="#0000FF"/>
-      <Label value="face_28" background="#0000FF"/>
-      <Label value="face_29" background="#0000FF"/>
-      <Label value="face_30" background="#0000FF"/>
-      <Label value="face_31" background="#0000FF"/>
-      <Label value="face_32" background="#0000FF"/>
-      <Label value="face_33" background="#0000FF"/>
-      <Label value="face_34" background="#0000FF"/>
-      <Label value="face_35" background="#0000FF"/>
-      <Label value="face_36" background="#0000FF"/>
-      <Label value="face_37" background="#0000FF"/>
-      <Label value="face_38" background="#0000FF"/>
-      <Label value="face_39" background="#0000FF"/>
-      <Label value="face_40" background="#0000FF"/>
-      <Label value="face_41" background="#0000FF"/>
-      <Label value="face_42" background="#0000FF"/>
-      <Label value="face_43" background="#0000FF"/>
-      <Label value="face_44" background="#0000FF"/>
-      <Label value="face_45" background="#0000FF"/>
-      <Label value="face_46" background="#0000FF"/>
-      <Label value="face_47" background="#0000FF"/>
-      <Label value="face_48" background="#0000FF"/>
-      <Label value="face_49" background="#0000FF"/>
-      <Label value="face_50" background="#0000FF"/>
-      <Label value="face_51" background="#0000FF"/>
-      <Label value="face_52" background="#0000FF"/>
-      <Label value="face_53" background="#0000FF"/>
-      <Label value="face_54" background="#0000FF"/>
-      <Label value="face_55" background="#0000FF"/>
-      <Label value="face_56" background="#0000FF"/>
-      <Label value="face_57" background="#0000FF"/>
-      <Label value="face_58" background="#0000FF"/>
-      <Label value="face_59" background="#0000FF"/>
-      <Label value="face_60" background="#0000FF"/>
-      <Label value="face_61" background="#0000FF"/>
-      <Label value="face_62" background="#0000FF"/>
-      <Label value="face_63" background="#0000FF"/>
-      <Label value="face_64" background="#0000FF"/>
-      <Label value="face_65" background="#0000FF"/>
-      <Label value="face_66" background="#0000FF"/>
-      <Label value="face_67" background="#0000FF"/>
-    </KeyPointLabels>
+  <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
+  	<Collapse open="true">
+      <Panel value="Body Keypoints (17 points)">
+        <KeyPointLabels name="label_body_keypoints" toName="image" strokeWidth="0.1">
+          <Label value="nose" background="#BB00FF" model_index="0"/>
+          <Label value="left_eye" background="#BB00FF" model_index="1"/>
+          <Label value="right_eye" background="#BB00FF" model_index="2"/>
+          <Label value="left_ear" background="#BB00FF" model_index="3"/>
+          <Label value="right_ear" background="#BB00FF" model_index="4"/>
+          <Label value="left_shoulder" background="#BB00FF" model_index="5"/>
+          <Label value="right_shoulder" background="#BB00FF" model_index="6"/>
+          <Label value="left_elbow" background="#BB00FF" model_index="7"/>
+          <Label value="right_elbow" background="#BB00FF" model_index="8"/>
+          <Label value="left_wrist" background="#BB00FF" model_index="9"/>
+          <Label value="right_wrist" background="#BB00FF" model_index="10"/>
+          <Label value="left_hip" background="#BB00FF" model_index="11"/>
+          <Label value="right_hip" background="#BB00FF" model_index="12"/>
+          <Label value="left_knee" background="#BB00FF" model_index="13"/>
+          <Label value="right_knee" background="#BB00FF" model_index="14"/>
+          <Label value="left_ankle" background="#BB00FF" model_index="15"/>
+          <Label value="right_ankle" background="#BB00FF" model_index="16"/>
+        </KeyPointLabels>
+      </Panel>
+    </Collapse>
   </View>
 
-  <View style="border: 2px solid #00AA00; padding: 10px; margin: 5px; border-radius: 5px;">
-    <Header value="Hands Keypoints"/>
-
-    <View style="border: 1px solid #00FF00; padding: 5px; margin: 5px; border-radius: 3px;">
-      <Header value="Left Hand (21 points)" size="small"/>
-      <KeyPointLabels name="label_lefthand_keypoints" toName="image" strokeWidth="1.5">
-        <Label value="left_hand_00" background="#00FF00"/>
-        <Label value="left_hand_01" background="#00FF00"/>
-        <Label value="left_hand_02" background="#00FF00"/>
-        <Label value="left_hand_03" background="#00FF00"/>
-        <Label value="left_hand_04" background="#00FF00"/>
-        <Label value="left_hand_05" background="#00FF00"/>
-        <Label value="left_hand_06" background="#00FF00"/>
-        <Label value="left_hand_07" background="#00FF00"/>
-        <Label value="left_hand_08" background="#00FF00"/>
-        <Label value="left_hand_09" background="#00FF00"/>
-        <Label value="left_hand_10" background="#00FF00"/>
-        <Label value="left_hand_11" background="#00FF00"/>
-        <Label value="left_hand_12" background="#00FF00"/>
-        <Label value="left_hand_13" background="#00FF00"/>
-        <Label value="left_hand_14" background="#00FF00"/>
-        <Label value="left_hand_15" background="#00FF00"/>
-        <Label value="left_hand_16" background="#00FF00"/>
-        <Label value="left_hand_17" background="#00FF00"/>
-        <Label value="left_hand_18" background="#00FF00"/>
-        <Label value="left_hand_19" background="#00FF00"/>
-        <Label value="left_hand_20" background="#00FF00"/>
-      </KeyPointLabels>
-    </View>
-
-    <View style="border: 1px solid #FF00FF; padding: 5px; margin: 5px; border-radius: 3px;">
-      <Header value="Right Hand (21 points)" size="small"/>
-      <KeyPointLabels name="label_righthand_keypoints" toName="image" strokeWidth="1.5">
-        <Label value="right_hand_00" background="#FF00FF"/>
-        <Label value="right_hand_01" background="#FF00FF"/>
-        <Label value="right_hand_02" background="#FF00FF"/>
-        <Label value="right_hand_03" background="#FF00FF"/>
-        <Label value="right_hand_04" background="#FF00FF"/>
-        <Label value="right_hand_05" background="#FF00FF"/>
-        <Label value="right_hand_06" background="#FF00FF"/>
-        <Label value="right_hand_07" background="#FF00FF"/>
-        <Label value="right_hand_08" background="#FF00FF"/>
-        <Label value="right_hand_09" background="#FF00FF"/>
-        <Label value="right_hand_10" background="#FF00FF"/>
-        <Label value="right_hand_11" background="#FF00FF"/>
-        <Label value="right_hand_12" background="#FF00FF"/>
-        <Label value="right_hand_13" background="#FF00FF"/>
-        <Label value="right_hand_14" background="#FF00FF"/>
-        <Label value="right_hand_15" background="#FF00FF"/>
-        <Label value="right_hand_16" background="#FF00FF"/>
-        <Label value="right_hand_17" background="#FF00FF"/>
-        <Label value="right_hand_18" background="#FF00FF"/>
-        <Label value="right_hand_19" background="#FF00FF"/>
-        <Label value="right_hand_20" background="#FF00FF"/>
-      </KeyPointLabels>
-    </View>
+  <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
+  	<Collapse open="true">
+      <Panel value="Foot Keypoints (6 points)">
+        <KeyPointLabels name="label_foot_keypoints" toName="image" strokeWidth="0.1">
+          <Label value="left_big_toe" background="#FF009D" model_index="17"/>
+          <Label value="left_small_toe" background="#FF009D" model_index="18"/>
+          <Label value="left_heel" background="#FF009D" model_index="19"/>
+          <Label value="right_big_toe" background="#FF009D" model_index="20"/>
+          <Label value="right_small_toe" background="#FF009D" model_index="21"/>
+          <Label value="right_heel" background="#FF009D" model_index="22"/>
+        </KeyPointLabels>
+      </Panel>
+    </Collapse>
   </View>
 
-  <View style="border: 2px solid #FFA500; padding: 10px; margin: 5px; border-radius: 5px;">
-    <Header value="Foot Keypoints (6 points)"/>
-    <KeyPointLabels name="label_foot_keypoints" toName="image" strokeWidth="2">
-      <Label value="left_big_toe" background="#FFA500"/>
-      <Label value="left_small_toe" background="#FFA500"/>
-      <Label value="left_heel" background="#FFA500"/>
-      <Label value="right_big_toe" background="#FFA500"/>
-      <Label value="right_small_toe" background="#FFA500"/>
-      <Label value="right_heel" background="#FFA500"/>
-    </KeyPointLabels>
+  <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
+  	<Collapse open="false">
+      <Panel value="Face Keypoints (68 points)">
+        <KeyPointLabels name="label_face_keypoints" toName="image" strokeWidth="0.1">
+          <Label value="face_00" background="#355E28" model_index="23"/>
+          <Label value="face_01" background="#355E28" model_index="24"/>
+          <Label value="face_02" background="#355E28" model_index="25"/>
+          <Label value="face_03" background="#355E28" model_index="26"/>
+          <Label value="face_04" background="#355E28" model_index="27"/>
+          <Label value="face_05" background="#355E28" model_index="28"/>
+          <Label value="face_06" background="#355E28" model_index="29"/>
+          <Label value="face_07" background="#355E28" model_index="30"/>
+          <Label value="face_08" background="#355E28" model_index="31"/>
+          <Label value="face_09" background="#355E28" model_index="32"/>
+          <Label value="face_10" background="#355E28" model_index="33"/>
+          <Label value="face_11" background="#355E28" model_index="34"/>
+          <Label value="face_12" background="#355E28" model_index="35"/>
+          <Label value="face_13" background="#355E28" model_index="36"/>
+          <Label value="face_14" background="#355E28" model_index="37"/>
+          <Label value="face_15" background="#355E28" model_index="38"/>
+          <Label value="face_16" background="#355E28" model_index="39"/>
+          <Label value="face_17" background="#355E28" model_index="40"/>
+          <Label value="face_18" background="#355E28" model_index="41"/>
+          <Label value="face_19" background="#355E28" model_index="42"/>
+          <Label value="face_20" background="#355E28" model_index="43"/>
+          <Label value="face_21" background="#355E28" model_index="44"/>
+          <Label value="face_22" background="#355E28" model_index="45"/>
+          <Label value="face_23" background="#355E28" model_index="46"/>
+          <Label value="face_24" background="#355E28" model_index="47"/>
+          <Label value="face_25" background="#355E28" model_index="48"/>
+          <Label value="face_26" background="#355E28" model_index="49"/>
+          <Label value="face_27" background="#355E28" model_index="50"/>
+          <Label value="face_28" background="#355E28" model_index="51"/>
+          <Label value="face_29" background="#355E28" model_index="52"/>
+          <Label value="face_30" background="#355E28" model_index="53"/>
+          <Label value="face_31" background="#355E28" model_index="54"/>
+          <Label value="face_32" background="#355E28" model_index="55"/>
+          <Label value="face_33" background="#355E28" model_index="56"/>
+          <Label value="face_34" background="#355E28" model_index="57"/>
+          <Label value="face_35" background="#355E28" model_index="58"/>
+          <Label value="face_36" background="#355E28" model_index="59"/>
+          <Label value="face_37" background="#355E28" model_index="60"/>
+          <Label value="face_38" background="#355E28" model_index="61"/>
+          <Label value="face_39" background="#355E28" model_index="62"/>
+          <Label value="face_40" background="#355E28" model_index="63"/>
+          <Label value="face_41" background="#355E28" model_index="64"/>
+          <Label value="face_42" background="#355E28" model_index="65"/>
+          <Label value="face_43" background="#355E28" model_index="66"/>
+          <Label value="face_44" background="#355E28" model_index="67"/>
+          <Label value="face_45" background="#355E28" model_index="68"/>
+          <Label value="face_46" background="#355E28" model_index="69"/>
+          <Label value="face_47" background="#355E28" model_index="70"/>
+          <Label value="face_48" background="#355E28" model_index="71"/>
+          <Label value="face_49" background="#355E28" model_index="72"/>
+          <Label value="face_50" background="#355E28" model_index="73"/>
+          <Label value="face_51" background="#355E28" model_index="74"/>
+          <Label value="face_52" background="#355E28" model_index="75"/>
+          <Label value="face_53" background="#355E28" model_index="76"/>
+          <Label value="face_54" background="#355E28" model_index="77"/>
+          <Label value="face_55" background="#355E28" model_index="78"/>
+          <Label value="face_56" background="#355E28" model_index="79"/>
+          <Label value="face_57" background="#355E28" model_index="80"/>
+          <Label value="face_58" background="#355E28" model_index="81"/>
+          <Label value="face_59" background="#355E28" model_index="82"/>
+          <Label value="face_60" background="#355E28" model_index="83"/>
+          <Label value="face_61" background="#355E28" model_index="84"/>
+          <Label value="face_62" background="#355E28" model_index="85"/>
+          <Label value="face_63" background="#355E28" model_index="86"/>
+          <Label value="face_64" background="#355E28" model_index="87"/>
+          <Label value="face_65" background="#355E28" model_index="88"/>
+          <Label value="face_66" background="#355E28" model_index="89"/>
+          <Label value="face_67" background="#355E28" model_index="90"/>
+        </KeyPointLabels>
+      </Panel>
+    </Collapse>
+  </View>
+
+  <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
+  	<Collapse open="false">
+      <Panel value="Hands Keypoints">
+        <View style="border: 1px solid #3D3D3D; padding: 5px; margin: 5px; border-radius: 3px;">
+          <Collapse open="true">
+            <Panel value="Left Hand (21 points)">
+              <KeyPointLabels name="label_lefthand_keypoints" toName="image" strokeWidth="0.1">
+                <Label value="left_hand_00" background="#295396" model_index="91"/>
+                <Label value="left_hand_01" background="#295396" model_index="92"/>
+                <Label value="left_hand_02" background="#295396" model_index="93"/>
+                <Label value="left_hand_03" background="#295396" model_index="94"/>
+                <Label value="left_hand_04" background="#295396" model_index="95"/>
+                <Label value="left_hand_05" background="#295396" model_index="96"/>
+                <Label value="left_hand_06" background="#295396" model_index="97"/>
+                <Label value="left_hand_07" background="#295396" model_index="98"/>
+                <Label value="left_hand_08" background="#295396" model_index="99"/>
+                <Label value="left_hand_09" background="#295396" model_index="100"/>
+                <Label value="left_hand_10" background="#295396" model_index="101"/>
+                <Label value="left_hand_11" background="#295396" model_index="102"/>
+                <Label value="left_hand_12" background="#295396" model_index="103"/>
+                <Label value="left_hand_13" background="#295396" model_index="104"/>
+                <Label value="left_hand_14" background="#295396" model_index="105"/>
+                <Label value="left_hand_15" background="#295396" model_index="106"/>
+                <Label value="left_hand_16" background="#295396" model_index="107"/>
+                <Label value="left_hand_17" background="#295396" model_index="108"/>
+                <Label value="left_hand_18" background="#295396" model_index="109"/>
+                <Label value="left_hand_19" background="#295396" model_index="110"/>
+                <Label value="left_hand_20" background="#295396" model_index="111"/>
+              </KeyPointLabels>
+            </Panel>
+          </Collapse>
+        </View>
+        <View style="border: 1px solid #3D3D3D; padding: 5px; margin: 5px; border-radius: 3px;">
+          <Collapse open="true">
+            <Panel value="Right Hand (21 points)">
+              <KeyPointLabels name="label_righthand_keypoints" toName="image" strokeWidth="0.1">
+                <Label value="right_hand_01" background="#BF8528" model_index="113"/>
+                <Label value="right_hand_02" background="#BF8528" model_index="114"/>
+                <Label value="right_hand_03" background="#BF8528" model_index="115"/>
+                <Label value="right_hand_04" background="#BF8528" model_index="116"/>
+                <Label value="right_hand_05" background="#BF8528" model_index="117"/>
+                <Label value="right_hand_06" background="#BF8528" model_index="118"/>
+                <Label value="right_hand_07" background="#BF8528" model_index="119"/>
+                <Label value="right_hand_08" background="#BF8528" model_index="120"/>
+                <Label value="right_hand_09" background="#BF8528" model_index="121"/>
+                <Label value="right_hand_10" background="#BF8528" model_index="122"/>
+                <Label value="right_hand_11" background="#BF8528" model_index="123"/>
+                <Label value="right_hand_12" background="#BF8528" model_index="124"/>
+                <Label value="right_hand_13" background="#BF8528" model_index="125"/>
+                <Label value="right_hand_14" background="#BF8528" model_index="126"/>
+                <Label value="right_hand_15" background="#BF8528" model_index="127"/>
+                <Label value="right_hand_16" background="#BF8528" model_index="128"/>
+                <Label value="right_hand_17" background="#BF8528" model_index="129"/>
+                <Label value="right_hand_18" background="#BF8528" model_index="130"/>
+                <Label value="right_hand_19" background="#BF8528" model_index="131"/>
+                <Label value="right_hand_20" background="#BF8528" model_index="132"/>
+              </KeyPointLabels>
+            </Panel>
+          </Collapse>
+        </View>
+      </Panel>
+  	</Collapse>
   </View>
 </View>
