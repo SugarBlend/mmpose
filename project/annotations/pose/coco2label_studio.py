@@ -48,7 +48,6 @@ KEYPOINT_CONFIGS = {
         "kpts_key": "face_kpts"
     },
     "left_hand": {
-        # "names_func": lambda i: f"left_hand_{i:02d}",
         "names": LEFT_HAND_KEYPOINT_NAMES,
         "from_name": "label_lefthand_keypoints",
         "prefix": "left_hand",
@@ -56,7 +55,6 @@ KEYPOINT_CONFIGS = {
         "kpts_key": "lefthand_kpts"
     },
     "right_hand": {
-        # "names_func": lambda i: f"right_hand_{i:02d}",
         "names": RIGHT_HAND_KEYPOINT_NAMES,
         "from_name": "label_righthand_keypoints",
         "prefix": "right_hand",
