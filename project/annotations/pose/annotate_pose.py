@@ -157,9 +157,12 @@ def draw_boxes_on_image(image: np.ndarray, boxes: List[List[float]], expansion: 
 
 @click.command()
 @click.option("--checkpoints-path", type=str,
-              default="E:/Projects/ExecutionSamples/checkpoints/sapiens/tensorrt/model.plan", help="")
-@click.option("--images-folder", type=str, default="../../dataset/images", help="")
-@click.option("--detection-annotations", type=str, default="../detection/coco_annotations.json", help="")
+              default="E:/Projects/ExecutionSamples/checkpoints/sapiens/tensorrt/model.plan",
+              help="Path to Sapiens tensorrt engine")
+@click.option("--images-folder", type=str, default="../../dataset/images",
+              help="Base folder path to images files")
+@click.option("--detection-annotations", type=str, default="../detection/coco_annotations.json",
+              help="Json annotations with detections.")
 @click.option("--output-json", type=str, default="./sapiens_coco_wholebody.json",
               help="Path to the annotation file in 'json'' format.")
 @click.option("--no-preview", is_flag=True, default=False, help="Disable image preview.")
