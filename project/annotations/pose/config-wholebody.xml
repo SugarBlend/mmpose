@@ -131,7 +131,7 @@
         <View style="border: 1px solid #3D3D3D; padding: 5px; margin: 5px; border-radius: 3px;">
           <Collapse open="true">
             <Panel value="Left Hand (21 points)">
-              <KeyPointLabels name="label_lefthand_keypoints" toName="image" strokeWidth="0.1">
+              <KeyPointLabels name="label_left_hand_keypoints" toName="image" strokeWidth="0.1">
                 <Label value="left_hand_root" background="#295396" model_index="91" category="person"/>
                 <Label value="left_thumb1" background="#295396" model_index="92" category="person"/>
                 <Label value="left_thumb2" background="#295396" model_index="93" category="person"/>
@@ -160,7 +160,7 @@
         <View style="border: 1px solid #3D3D3D; padding: 5px; margin: 5px; border-radius: 3px;">
           <Collapse open="true">
             <Panel value="Right Hand (21 points)">
-              <KeyPointLabels name="label_righthand_keypoints" toName="image" strokeWidth="0.1">
+              <KeyPointLabels name="label_right_hand_keypoints" toName="image" strokeWidth="0.1">
                 <Label value="right_hand_root" background="#BF8528" model_index="112" category="person"/>
                 <Label value="right_thumb1" background="#BF8528" model_index="113" category="person"/>
                 <Label value="right_thumb2" background="#BF8528" model_index="114" category="person"/>

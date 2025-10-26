@@ -15,13 +15,13 @@ from ultralytics import YOLO
 @click.option(
     "--files",
     type=str,
-    default="../../dataset/images",
+    default="D:/NewPoseCustom/stable",
     help="Folder of images to annotate."
 )
 @click.option(
     "--output-json",
     type=str,
-    default="coco_annotations.json",
+    default="anns/coco/stable.json",
     help="Path to the annotation file in 'json' format."
 )
 @click.option(
@@ -33,12 +33,13 @@ from ultralytics import YOLO
 @click.option(
     "--no-preview",
     is_flag=True,
+    default=True,
     help="Disable image preview."
 )
 @click.option(
     "--vis-delay",
     type=int,
-    default=30,
+    default=1,
     help="Hold to frame display in ms."
 )
 def annotate(
