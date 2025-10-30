@@ -11,26 +11,26 @@
   	<Collapse open="true">
       <Panel value="Body Keypoints (20 points)">
         <KeyPointLabels name="label_body_keypoints" toName="image" strokeWidth="0.1">
-          <Label value="nose" background="#BB00FF" model_index="0" category="person"/>
-          <Label value="left_eye" background="#BB00FF" model_index="1" category="person"/>
+          <Label value="nose" background="#8A2BE2" model_index="0" category="person"/>
+          <Label value="left_eye" background="#FF4500" model_index="1" category="person"/>
           <Label value="right_eye" background="#BB00FF" model_index="2" category="person"/>
-          <Label value="left_ear" background="#BB00FF" model_index="3" category="person"/>
+          <Label value="left_ear" background="#FF4500" model_index="3" category="person"/>
           <Label value="right_ear" background="#BB00FF" model_index="4" category="person"/>
-          <Label value="left_shoulder" background="#BB00FF" model_index="5" category="person"/>
+          <Label value="left_shoulder" background="#FF4500" model_index="5" category="person"/>
           <Label value="right_shoulder" background="#BB00FF" model_index="6" category="person"/>
-          <Label value="left_elbow" background="#BB00FF" model_index="7" category="person"/>
+          <Label value="left_elbow" background="#FF4500" model_index="7" category="person"/>
           <Label value="right_elbow" background="#BB00FF" model_index="8" category="person"/>
-          <Label value="left_wrist" background="#BB00FF" model_index="9" category="person"/>
+          <Label value="left_wrist" background="#FF4500" model_index="9" category="person"/>
           <Label value="right_wrist" background="#BB00FF" model_index="10" category="person"/>
-          <Label value="left_hip" background="#BB00FF" model_index="11" category="person"/>
+          <Label value="left_hip" background="#FF4500" model_index="11" category="person"/>
           <Label value="right_hip" background="#BB00FF" model_index="12" category="person"/>
-          <Label value="left_knee" background="#BB00FF" model_index="13" category="person"/>
+          <Label value="left_knee" background="#FF4500" model_index="13" category="person"/>
           <Label value="right_knee" background="#BB00FF" model_index="14" category="person"/>
-          <Label value="left_ankle" background="#BB00FF" model_index="15" category="person"/>
+          <Label value="left_ankle" background="#FF4500" model_index="15" category="person"/>
           <Label value="right_ankle" background="#BB00FF" model_index="16" category="person"/>
-          <Label value="head" background="#BB00FF" model_index="17" category="person"/>
-          <Label value="neck" background="#BB00FF" model_index="18" category="person"/>
-          <Label value="hip" background="#BB00FF" model_index="19" category="person"/>
+          <Label value="head" background="#8A2BE2" model_index="17" category="person"/>
+          <Label value="neck" background="#8A2BE2" model_index="18" category="person"/>
+          <Label value="hip" background="#8A2BE2" model_index="19" category="person"/>
         </KeyPointLabels>
       </Panel>
     </Collapse>
