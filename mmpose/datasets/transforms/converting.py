@@ -104,7 +104,8 @@ class KeypointConverter(BaseTransform):
         # Initialize output arrays
         keypoints = np.zeros((num_instances, self.num_keypoints, 3))
         keypoints_visible = np.zeros((num_instances, self.num_keypoints))
-        key = 'keypoints_3d' if 'keypoints_3d' in results else 'keypoints'
+        # key = 'keypoints_3d' if 'keypoints_3d' in results else 'keypoints'
+        key = 'keypoints'
         c = results[key].shape[-1]
 
         flip_indices = results.get('flip_indices', None)
@@ -140,11 +141,11 @@ class KeypointConverter(BaseTransform):
         results['keypoints'] = keypoints[..., :2]
         results['keypoints_visible'] = np.stack(
             [keypoints_visible, keypoints_visible_weights], axis=2)
-        if 'keypoints_3d' in results:
-            results['keypoints_3d'] = keypoints
-            results['lifting_target'] = keypoints[results['target_idx']]
-            results['lifting_target_visible'] = keypoints_visible[
-                results['target_idx']]
+        # if 'keypoints_3d' in results:
+        #     results['keypoints_3d'] = keypoints
+        #     results['lifting_target'] = keypoints[results['target_idx']]
+        #     results['lifting_target_visible'] = keypoints_visible[
+        #         results['target_idx']]
         results['flip_indices'] = flip_indices
 
         return results
