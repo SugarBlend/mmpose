@@ -11,7 +11,7 @@
   	<Collapse open="true">
       <Panel value="Body Keypoints (20 points)">
         <KeyPointLabels name="label_body_keypoints" toName="image" strokeWidth="0.1">
-          <Label value="nose" background="#8A2BE2" model_index="0" category="person"/>
+          <Label value="nose" background="#00008B" model_index="0" category="person"/>
           <Label value="left_eye" background="#FF4500" model_index="1" category="person"/>
           <Label value="right_eye" background="#BB00FF" model_index="2" category="person"/>
           <Label value="left_ear" background="#FF4500" model_index="3" category="person"/>
@@ -28,9 +28,9 @@
           <Label value="right_knee" background="#BB00FF" model_index="14" category="person"/>
           <Label value="left_ankle" background="#FF4500" model_index="15" category="person"/>
           <Label value="right_ankle" background="#BB00FF" model_index="16" category="person"/>
-          <Label value="head" background="#8A2BE2" model_index="17" category="person"/>
-          <Label value="neck" background="#8A2BE2" model_index="18" category="person"/>
-          <Label value="hip" background="#8A2BE2" model_index="19" category="person"/>
+          <Label value="head" background="#00008B" model_index="17" category="person"/>
+          <Label value="neck" background="#00008B" model_index="18" category="person"/>
+          <Label value="hip" background="#00008B" model_index="19" category="person"/>
         </KeyPointLabels>
       </Panel>
     </Collapse>
@@ -39,12 +39,12 @@
   	<Collapse open="true">
       <Panel value="Foot Keypoints (6 points)">
         <KeyPointLabels name="label_foot_keypoints" toName="image" strokeWidth="0.1">
-          <Label value="left_big_toe" background="#FF009D" model_index="20" category="person"/>
-          <Label value="right_big_toe" background="#FF009D" model_index="21" category="person"/>
-          <Label value="left_small_toe" background="#FF009D" model_index="22" category="person"/>
-          <Label value="right_small_toe" background="#FF009D" model_index="23" category="person"/>
-          <Label value="left_heel" background="#FF009D" model_index="24" category="person"/>
-          <Label value="right_heel" background="#FF009D" model_index="25" category="person"/>
+          <Label value="left_big_toe" background="#FF4500" model_index="20" category="person"/>
+          <Label value="right_big_toe" background="#BB00FF" model_index="21" category="person"/>
+          <Label value="left_small_toe" background="#FF4500" model_index="22" category="person"/>
+          <Label value="right_small_toe" background="#BB00FF" model_index="23" category="person"/>
+          <Label value="left_heel" background="#FF4500" model_index="24" category="person"/>
+          <Label value="right_heel" background="#BB00FF" model_index="25" category="person"/>
         </KeyPointLabels>
       </Panel>
     </Collapse>
