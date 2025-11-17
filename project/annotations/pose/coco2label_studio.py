@@ -4,6 +4,7 @@ from pathlib import Path
 from tqdm import tqdm
 from typing import Dict, List, Tuple, Any, Optional
 
+
 BODY_KEYPOINT_COCO_NAMES = {
     0: "nose", 1: "left_eye", 2: "right_eye", 3: "left_ear", 4: "right_ear",
     5: "left_shoulder", 6: "right_shoulder", 7: "left_elbow", 8: "right_elbow",
@@ -160,7 +161,7 @@ class KeypointProcessor(object):
               help="Url for local storage path from Label Studio.")
 @click.option("--num-joints", type=int, default=26, help="Number of keypoints per person.")
 @click.option("--frames-per-task", type=int, default=1000, help="Annotations per label studio description file.")
-def coco_wholebody_to_label_studio_predictions(
+def coco_to_label_studio_predictions(
         coco_file: str,
         output_file: str,
         local_storage_path: str,
@@ -257,4 +258,4 @@ def _create_bbox_annotation(ann: Dict, image_info: Dict, bbox_id: str) -> Option
 
 
 if __name__ == "__main__":
-    coco_wholebody_to_label_studio_predictions()
+    coco_to_label_studio_predictions()
