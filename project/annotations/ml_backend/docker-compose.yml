@@ -1,0 +1,42 @@
+services:
+  ml-backend:
+    image: humansignal/auto-pose-labeling:v0
+    build:
+      context: .
+      args:
+        TEST_ENV: ${TEST_ENV}
+    environment:
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER:-}
+      - BASIC_AUTH_PASS=${BASIC_AUTH_PASS:-}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - WORKERS=${WORKERS:-1}
+      - THREADS=${THREADS:-8}
+      - MODEL_DIR=${MODEL_DIR:-/app/models}
+      - LABEL_STUDIO_URL=${LABEL_STUDIO_URL}
+      - LABEL_STUDIO_API_KEY=${LABEL_STUDIO_API_KEY}
+      - MMPOSE_CHECKPOINT=${MMPOSE_CHECKPOINT}
+      - MMPOSE_CONFIG=${MMPOSE_CONFIG}
+      - YOLO_MODEL=${YOLO_MODEL}
+      - DEVICE=${DEVICE:-cpu}
+    ports:
+      - "${ML_BACKEND_PORT:-9090}:9090"
+    volumes:
+      - "./data/server:/data"
+      - "./models:/app/models"
+      - "./cache_dir:/app/cache_dir"
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-4}"
+          memory: "${MEMORY_LIMIT:-10240M}"
+        reservations:
+          cpus: "${CPU_RESERVATION:-1}"
+          memory: "${MEMORY_RESERVATION:-2048M}"
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+                - utility
+                - compute
+                - video

@@ -1,0 +1,6 @@
+ultralytics~=8.4.1
+numpy<2
+gdown
+torch==2.10+cu128
+torchvision==0.25.0+cu128
+--extra-index-url https://download.pytorch.org/whl/cu128
