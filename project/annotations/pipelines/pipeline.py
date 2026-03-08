@@ -153,4 +153,3 @@ class MMPipeline(object):
                 data_sample.predicts_fields = pred_fields
 
         return data_samples
-
