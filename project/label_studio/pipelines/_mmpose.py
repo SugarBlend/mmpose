@@ -5,7 +5,7 @@ from typing import Union, Tuple
 from pathlib import Path
 
 
-class RTMPose(object):
+class MMPose(object):
     def __init__(
         self,
         pose_config: Union[str, Path],

@@ -1,5 +1,4 @@
 import argparse
-import logging
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,9 +15,9 @@ from deploy2serve.deployment.projects.sapiens.utils.palettes import (
     COCO_WHOLEBODY_SKELETON_INFO,
 )
 
-sys.path.insert(0, Path(__file__).parents[3].as_posix())
-from project.annotations.pipelines.pipeline import MMPipeline
-from config import ComparisonConfig, load_comparison_config
+sys.path.insert(0, Path(__file__).parents[2].as_posix())
+from project.label_studio.pipelines.pipeline import MMPipeline
+from config import EvalConfig
 from overlay import (
     MODEL_JOINT_COLORS, MODEL_LIMB_COLORS,
     draw_skeleton_pretty, render_hud,
@@ -48,7 +47,7 @@ class ModelVisState:
     skeleton: list[tuple[int, int]]
 
 
-def _build_model_states(cfg: ComparisonConfig) -> list[ModelVisState]:
+def _build_model_states(cfg: EvalConfig) -> list[ModelVisState]:
     first_pipeline = MMPipeline(
         pose_checkpoint=cfg.models[0].model_path,
         pose_config=cfg.models[0].config_path,
@@ -99,19 +98,20 @@ def _infer(
     return results
 
 
-def visual_difference(cfg: ComparisonConfig) -> None:
+def visual_difference(cfg: EvalConfig) -> None:
     logger.info("Loading models...")
     states = _build_model_states(cfg)
 
     # ann_file and dataset_path: prefer top-level [comparison] section,
     # fall back to first model's fields
-    ann_file = cfg.ann_file or cfg.models[0].ann_file
-    dataset_path = cfg.dataset_path or cfg.models[0].dataset_folder
+    ann_file = cfg.models[0].ann_file
+    dataset_path = cfg.models[0].dataset_folder
 
     coco = COCO(ann_file)
     cat_ids = coco.getCatIds(catNms=["person"])
     img_ids = coco.getImgIds(catIds=cat_ids)
 
+    cfg.window_name = "Pose Comparison"
     cv2.namedWindow(cfg.window_name, cv2.WINDOW_GUI_EXPANDED)
 
     legends = [s.legend for s in states]
@@ -161,5 +161,5 @@ def _parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
-    cfg = load_comparison_config(args.config)
+    cfg = EvalConfig.load(args.config)
     visual_difference(cfg)

@@ -88,13 +88,13 @@ class KeypointProcessor(object):
         return x_percent, y_percent
 
     def _create_keypoint_annotation(
-            self,
-            x_percent: float,
-            y_percent: float,
-            labels: List[str],
-            point_id: str,
-            from_name: str,
-            width: float = 0.5
+        self,
+        x_percent: float,
+        y_percent: float,
+        labels: List[str],
+        point_id: str,
+        from_name: str,
+        width: float = 0.5
     ) -> Dict[str, Any]:
         return {
             "id": point_id,
@@ -113,12 +113,12 @@ class KeypointProcessor(object):
         }
 
     def process_joints(
-            self,
-            keypoints: List[float],
-            config: Dict,
-            image_id: int,
-            ann_idx: int,
-            point_ids: Dict
+        self,
+        keypoints: List[float],
+        config: Dict,
+        image_id: int,
+        ann_idx: int,
+        point_ids: Dict
     ) -> List[Dict[str, Any]]:
         results = []
         prefix = config["prefix"]
@@ -152,21 +152,21 @@ class KeypointProcessor(object):
 
 @click.command()
 @click.option("--coco-file", type=str,
-              default="anns/coco/2025-10-20 12-50-24_halpe-x.json",
+              default="../annotations/pose/coco/stable.json",
               help="Path to file which consider labels in coco format.")
 @click.option("--output-file", type=str,
-              default="anns/ls/2025-10-20 12-50-24.json", help="Path to dump file.")
+              default="../annotations/pose/label_studio/stable.json", help="Path to dump file.")
 @click.option("--local-storage-path", type=str,
-              default="/data/local-files/?d=NewPoseCustom/2025-10-20 12-50-24",
+              default="/data/local-files/?d=NewPoseCustom/stable",
               help="Url for local storage path from Label Studio.")
 @click.option("--num-joints", type=int, default=26, help="Number of keypoints per person.")
 @click.option("--frames-per-task", type=int, default=1000, help="Annotations per label studio description file.")
 def coco_to_label_studio_predictions(
-        coco_file: str,
-        output_file: str,
-        local_storage_path: str,
-        num_joints: int,
-        frames_per_task: Optional[int] = 100
+    coco_file: str,
+    output_file: str,
+    local_storage_path: str,
+    num_joints: int,
+    frames_per_task: Optional[int] = 100
 ) -> List[Dict]:
     coco_file = Path(coco_file)
     output_file = Path(output_file)
@@ -198,7 +198,7 @@ def coco_to_label_studio_predictions(
                 },
                 "predictions": [{
                     "result": [],
-                    "model_version": "sapiens_1b_coco_wholebody_best_coco_wholebody_AP_727"
+                    "model_version": "1.0.0"
                 }]
             }
 

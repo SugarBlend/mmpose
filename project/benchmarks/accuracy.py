@@ -11,17 +11,15 @@ import matplotlib
 import matplotlib.pyplot as plt
 from mmdeploy.codebase.mmpose.deploy.pose_detection import _get_dataset_metainfo
 from mmengine.config import Config
-
-import mmpose.evaluation.metrics
 from mmpose import __file__ as mmpose_root
 from mmpose.utils.logger import MMLogger
 import torch
 from tqdm import tqdm
 from typing import Any
 
-sys.path.insert(0, Path(__file__).parents[3].as_posix())
-from project.annotations.pipelines.pipeline import MMPipeline
-from config import ModelConfig, load_eval_config
+sys.path.insert(0, Path(__file__).parents[2].as_posix())
+from project.label_studio.pipelines.pipeline import MMPipeline
+from config import ModelConfig, EvalConfig
 
 matplotlib.use("Qt5Agg")
 logger = MMLogger.get_instance("Accuracy")
@@ -199,5 +197,5 @@ def _parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
-    cfg = load_eval_config(args.config)
+    cfg = EvalConfig.load(args.config)
     launch_evaluation(cfg.models, save_dir=args.save_dir, show_plot=not args.no_show)
