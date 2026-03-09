@@ -6,7 +6,7 @@ import traceback
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
-
+import sys
 import click
 import cv2
 import numpy as np
@@ -18,6 +18,8 @@ from tqdm import tqdm
 from deploy2serve.deployment.projects.sapiens.utils.adapters import visualizer_adapter
 from deploy2serve.deployment.projects.sapiens.utils.palettes import COCO_WHOLEBODY_KPTS_COLORS, COCO_WHOLEBODY_SKELETON_INFO
 from palettes import COCO_HALPE26_KPTS_COLORS, COCO_HALPE26_SKELETON_INFO
+
+sys.path.insert(0, Path(__file__).parents[2].as_posix())
 from project.label_studio.pipelines._mmpose import MMPose
 from project.label_studio.pipelines.sapiens import Sapiens
 
