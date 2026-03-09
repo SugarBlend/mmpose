@@ -202,8 +202,8 @@ class LSConverter(object):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Convert Label Studio projects to COCO via snapshot export")
-    parser.add_argument("--config", default="config-halpe.xml", help="Label Studio config XML")
-    parser.add_argument("--output_folder", default="outputs", help="Folder to save COCO JSONs")
+    parser.add_argument("--config", default="configs/config-halpe.xml", help="Label Studio config XML")
+    parser.add_argument("--output_folder", default="../annotations", help="Folder to save COCO JSONs")
     args = parser.parse_args()
 
     converter = LSConverter(args.config)
