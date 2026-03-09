@@ -4,7 +4,7 @@ cd project\label_studio
 .\launch-label-studio.ps1
 ```
 ### Fetch annotations
-Fetch tasks from ls and convert them to coco format:
+Fetch tasks from ls and convert them to coco format (update secrets .env file firstly):
 ```shell
 cd project\label_studio
 python .\tasks2json.py
@@ -24,4 +24,9 @@ After that your can transform coco json to label studio format for create tasks 
 ```shell
 cd project\label_studio
 python .\coco2label_studio.py
+```
+
+Add ml pipeline for label studio server (task Pose estimation, but previously you need to update secrets file .env):
+```shell
+docker-compose -f .\project\label_studio\ml_backend\docker-compose.yml up --build
 ```
