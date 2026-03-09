@@ -16,10 +16,8 @@ from pycocotools.coco import COCO
 from tqdm import tqdm
 
 from deploy2serve.deployment.projects.sapiens.utils.adapters import visualizer_adapter
-from deploy2serve.deployment.projects.sapiens.utils.palettes import (
-    COCO_HALPE26_KPTS_COLORS, COCO_HALPE26_SKELETON_INFO,
-    COCO_WHOLEBODY_KPTS_COLORS, COCO_WHOLEBODY_SKELETON_INFO,
-)
+from deploy2serve.deployment.projects.sapiens.utils.palettes import COCO_WHOLEBODY_KPTS_COLORS, COCO_WHOLEBODY_SKELETON_INFO
+from palettes import COCO_HALPE26_KPTS_COLORS, COCO_HALPE26_SKELETON_INFO
 from project.label_studio.pipelines._mmpose import MMPose
 from project.label_studio.pipelines.sapiens import Sapiens
 
