@@ -10,10 +10,8 @@ from mmpose.structures import PoseDataSample
 from pycocotools.coco import COCO
 from tqdm import tqdm
 
-from deploy2serve.deployment.projects.sapiens.utils.palettes import (
-    COCO_HALPE26_SKELETON_INFO,
-    COCO_WHOLEBODY_SKELETON_INFO,
-)
+from project.label_studio.palettes import COCO_HALPE26_SKELETON_INFO
+from deploy2serve.deployment.projects.sapiens.utils.palettes import COCO_WHOLEBODY_SKELETON_INFO
 
 sys.path.insert(0, Path(__file__).parents[2].as_posix())
 from project.label_studio.pipelines.pipeline import MMPipeline
