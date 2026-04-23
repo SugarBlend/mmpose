@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 from label_studio_sdk import LabelStudio
 import time
 from typing import Any
+from urllib.parse import unquote
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ class LSConverter(object):
         joints_number = len(self.label_values)
 
         for idx, task in enumerate(tasks):
-            image_name = Path(task["data"]["image"]).name
+            image_name = Path(unquote(task["data"]["image"])).name
             image_id = task["id"]
 
             if not task.get("annotations"):

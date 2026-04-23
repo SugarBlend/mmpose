@@ -12,10 +12,8 @@ from mmpose.structures.bbox import bbox_xywh2xyxy
 import numpy as np
 from itertools import zip_longest
 from pathlib import Path
-import tensorrt as trt
 from typing import List, Sequence
 import torch.cuda
-from ultralytics.utils.checks import check_version
 
 
 class MMPipeline(object):
@@ -54,14 +52,10 @@ class MMPipeline(object):
 
         self.pipeline = Compose(self.model_cfg.test_dataloader.dataset.pipeline)
 
-    def inference(self, input_tensor: torch.Tensor) -> List[torch.Tensor]:
-        if check_version(trt.__version__, ">=8.2.5") and check_version(trt.__version__, "<=8.6.1"):
-            self.context.set_binding_shape(0, tuple(input_tensor.shape))
-        elif check_version(trt.__version__, ">=9.1.0"):
-            self.context.set_input_shape("input", tuple(input_tensor.shape))
-        self.binding_address["input"] = int(input_tensor.contiguous().data_ptr())
-        self.context.execute_v2(list(self.binding_address.values()))
-        return [bind.data for bind in self.bindings.values() if not bind.is_input_node]
+        mean = self.model_cfg.model.data_preprocessor.mean
+        std = self.model_cfg.model.data_preprocessor.std
+        self._mean = torch.tensor(mean, dtype=torch.float32).reshape(3, 1, 1).cuda()
+        self._std = torch.tensor(std, dtype=torch.float32).reshape(3, 1, 1).cuda()
 
     # bboxes in "xywh" format
     def __call__(self, image_path: str, bboxes: List[List[float]]) -> List[PoseDataSample]:
@@ -83,8 +77,10 @@ class MMPipeline(object):
                 data_info['bbox_score'] = np.ones(1, dtype=np.float32)
                 data_list.append(self.pipeline(data_info))
             batch = pseudo_collate(data_list)
-            batch_outputs = self.model.infer({"input": torch.stack(batch["inputs"]) / 255})
+            inputs = torch.stack(batch["inputs"]).float().cuda()
+            batch["inputs"] = (inputs[:, [2, 1, 0]] - self._mean) / self._std
 
+            batch_outputs = self.model.infer({"input": batch["inputs"]})
             if self.codec.type == "YOLOXPoseAnnotationProcessor":
                 raise NotImplementedError("Check realization in mmdeploy")
             elif self.codec.type == "SimCCLabel":

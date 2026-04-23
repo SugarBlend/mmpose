@@ -208,16 +208,16 @@ class _HUDRenderer:
         joint_colors_f: list[tuple[float, float, float]],
         limb_colors_f:  list[tuple[float, float, float]],
         *,
-        mg: int = 18,
+        mg: int = 10,
     ) -> None:
         draw = ImageDraw.Draw(layer)
-        font_title = self._font(18)
-        font_name  = self._font(26, bold=True)
+        font_title = self._font(14)
+        font_name  = self._font(18, bold=True)
 
-        dot_r = 12
+        dot_r = 10
         limb_sw = 36 # limb swatch width
         limb_th = 6 # limb swatch thickness
-        gap = 12
+        gap = 10
         pad = 20
         row_h = 52
 
@@ -230,7 +230,7 @@ class _HUDRenderer:
 
         x0, y0, x1, y1 = mg, mg, mg + pw, mg + ph
 
-        self._rounded_rect(draw, x0, y0, x1, y1, 12,
+        self._rounded_rect(draw, x0, y0, x1, y1, 10,
                            fill=(18, 20, 28, 210),
                            outline=(60, 65, 92, 200), outline_width=1)
 
@@ -364,9 +364,9 @@ def render_hud(
     layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
 
     _hud.legend(layer, legends, joint_colors, limb_colors)
-    _hud.counter(layer, current_idx, total)
-    _hud.progress_bar(layer, current_idx, total)
-    _hud.hints(layer)
+    # _hud.counter(layer, current_idx, total)
+    # _hud.progress_bar(layer, current_idx, total)
+    # _hud.hints(layer)
 
     # Composite
     out_pil = Image.alpha_composite(base_pil, layer)
