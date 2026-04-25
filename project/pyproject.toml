@@ -4,50 +4,48 @@ version = "0.1.0"
 requires-python = "==3.10.*"
 
 dependencies = [
+    "setuptools",
     "numpy<2",
-    "scikit-learn>=1.3",
     "ultralytics==8.3.206",
     "opencv-python~=4.9.0.80",
-    "pycairo",
     "nuitka",
     "torch==2.1.2",
     "torchvision==0.16.2",
     "torchaudio==2.1.2",
-    "mmcv==2.1.0",
-    "mmpretrain==1.2.0",
-    "mmdeploy==1.3.1",
-    "mmdet>=3.0.0,<3.3.0",
+    "kornia",
     "onnx==1.16.0",
     "onnxruntime-gpu==1.20.1",
-    "PyQt5",
-    "setuptools>=59,<67",
-    "kornia",
-    "chumpy @ git+https://github.com/mattloper/chumpy.git@4228d703b622e172e843438fe0fada102979361a",
-    "mlflow==2.11",
-    "albumentations==1.3.1"
+    "mlflow==2.22.*",
+    "tensorrt==10.9.0.34",
 ]
 
 [dependency-groups]
-
+graphics = [
+    "pycairo",
+]
 ray = [
     "ray[tune]",
     "ray[default]",
     "optuna",
 ]
-
 labeling = [
     "label-studio-sdk==2.0.*",
     "label-studio-converter==0.0.59",
     "label-studio==1.21.0",
     "label-studio-ml",
 ]
+mmlab = [
+    "albumentations==1.3.1",
+    "chumpy @ git+https://github.com/mattloper/chumpy.git@4228d703b622e172e843438fe0fada102979361a",
+    "mmcv @ https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/mmcv-2.1.0-cp310-cp310-win_amd64.whl; python_version == '3.10' and sys_platform == 'win32'",
+    "mmcv @ https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/mmcv-2.1.0-cp310-cp310-manylinux1_x86_64.whl; python_version == '3.10' and sys_platform == 'linux'",
+    "mmpretrain==1.2.0",
+    "mmdeploy==1.3.1",
+    "mmdet>=3.0.0,<3.3.0",
+]
 
 [tool.uv]
 index-url = "https://pypi.org/simple"
-required-environments = [
-    "platform_machine == 'x86_64'"
-]
-
 
 [[tool.uv.index]]
 name = "pytorch-cu121"
@@ -63,8 +61,4 @@ torchvision = [
 ]
 torchaudio = [
   { index = "pytorch-cu121"},
-]
-mmcv = [
-    { url = "https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/mmcv-2.1.0-cp310-cp310-win_amd64.whl", marker = "sys_platform == 'win32'" },
-    { url = "https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/mmcv-2.1.0-cp310-cp310-manylinux1_x86_64.whl", marker = "sys_platform == 'linux'" },
 ]
