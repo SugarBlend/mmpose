@@ -1,22 +1,19 @@
 #!/bin/bash
 
-uv venv --python 3.10
-source .venv/bin/activate
+export UV_PROJECT_ENVIRONMENT=$(pwd)/.venv
 
-rm -rf ./-DeployAndServe
-git clone https://github.com/SugarBlend/-DeployAndServe.git
+uv venv --python 3.10 --clear
+source .venv/bin/activate || source .venv/Scripts/activate
 
 uv pip install poetry wheel
 
-cd ./-DeployAndServe
-
+# DeployAndServe consider export for Sapiens and completed tensorrt runner
+rm -rf ./-DeployAndServe
+git clone https://github.com/SugarBlend/-DeployAndServe.git
 poetry config virtualenvs.create false --local
-poetry build -f wheel
+poetry build -f wheel -P ./-DeployAndServe
 
-uv pip install dist/*.whl
-
-cd ../
-
-uv pip install -r ./project/pyproject.toml --index-strategy unsafe-best-match
+uv sync --project ./project --index-strategy unsafe-best-match --all-groups
 uv pip install -r ./requirements.txt --no-build-isolation
 uv pip install . --no-build-isolation
+uv pip install ./-DeployAndServe/dist/*.whl --no-deps
