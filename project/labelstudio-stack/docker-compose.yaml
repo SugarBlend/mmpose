@@ -15,7 +15,7 @@ services:
       - ./data/minio:/data
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["cmd", "mc", "ready", "local"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 10s
       timeout: 5s
       retries: 5
