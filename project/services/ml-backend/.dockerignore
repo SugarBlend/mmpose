@@ -4,6 +4,8 @@
 # Include Dockerfile and docker-compose for reference (optional, decide based on your use case)
 !Dockerfile
 !docker-compose.yml
+!*.html
+!*.json
 
 # Include Python application files
 !*.py
