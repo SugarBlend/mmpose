@@ -1,0 +1,138 @@
+services:
+  # create bucket on start
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    networks:
+      - mlops-net
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_DEFAULT_BUCKET: ${MINIO_DEFAULT_BUCKET}
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+        mc mb --ignore-existing local/mlflow-artifacts;
+        mc mb --ignore-existing local/datasets;
+        mc anonymous set download local/datasets;
+        echo 'MinIO buckets ready';
+      "
+
+  # MinIO
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    networks:
+      - mlops-net
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SERVER_URL: http://${MINIO_GLOBAL_HOST}:9000
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Label Studio
+  labelstudio:
+    image: heartexlabs/label-studio:latest
+    container_name: labelstudio
+    networks:
+      - mlops-net
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    command: label-studio start --host 0.0.0.0 --port 8081 --no-browser
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      ML_BACKEND_TIMEOUT: 30
+      DJANGO_DB: sqlite
+      DEBUG: "true"
+      LOCAL_FILES_SERVING_ENABLED: "true"
+      LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /data/local-files
+      LABEL_STUDIO_USERNAME: ${LABEL_STUDIO_USERNAME}
+      LABEL_STUDIO_PASSWORD: ${LABEL_STUDIO_PASSWORD}
+      # Label Studio searching MinIO by container name
+      MINIO_STORAGE_ENDPOINT_URL: http://minio:9000
+      MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./data/labelstudio:/label-studio/data
+      - D:/:/data/local-files:ro
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/health" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Label Studio auto labeling
+  ml-backend:
+    image: humansignal/auto-pose-labeling:v0
+    container_name: ml-backend
+    networks:
+      - mlops-net
+    build:
+      context: ./ml-backend
+      args:
+        TEST_ENV: ${TEST_ENV}
+    environment:
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER:-}
+      - BASIC_AUTH_PASS=${BASIC_AUTH_PASS:-}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - WORKERS=${WORKERS:-1}
+      - THREADS=${THREADS:-8}
+      # inner variables
+      - MODEL_DIR=${MODEL_DIR:-/app/models}
+      - LABEL_STUDIO_URL=${LABEL_STUDIO_URL}
+      - LABEL_STUDIO_API_KEY=${LABEL_STUDIO_API_KEY}
+      - MMPOSE_CHECKPOINT=${MMPOSE_CHECKPOINT}
+      - MMPOSE_CONFIG=${MMPOSE_CONFIG}
+      - YOLO_MODEL=${YOLO_MODEL}
+      - DEVICE=${DEVICE:-cpu}
+    ports:
+      - "${ML_BACKEND_PORT:-9090}:9090"
+    depends_on:
+      labelstudio:
+        condition: service_healthy
+    volumes:
+      - ./ml-backend/models:/app/models
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9090/health-ready" ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-4}"
+          memory: "${MEMORY_LIMIT:-10240M}"
+        reservations:
+          cpus: "${CPU_RESERVATION:-1}"
+          memory: "${MEMORY_RESERVATION:-2048M}"
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+                - utility
+                - compute
+                - video
+
+networks:
+  mlops-net:
+    driver: bridge

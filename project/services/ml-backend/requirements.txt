@@ -1,0 +1,5 @@
+ultralytics~=8.4.1
+numpy<2
+gdown
+flasgger
+colorlog

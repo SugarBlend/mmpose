@@ -1,0 +1,196 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Pose Estimation ML API",
+    "version": "1.0.0",
+    "description": "Label Studio ML backend for automatic pose labeling"
+  },
+  "basePath": "/",
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/predict": {
+      "post": {
+        "summary": "Run pose estimation inference",
+        "tags": [
+          "Inference"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "tasks"
+              ],
+              "properties": {
+                "tasks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "type": "string",
+                            "example": "http://minio:9000/datasets/photo.jpg"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Predictions returned successfully"
+          }
+        }
+      }
+    },
+    "/setup": {
+      "post": {
+        "summary": "Setup / initialize the model",
+        "tags": [
+          "Model"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "model_version": {
+                  "type": "string",
+                  "example": "1.0.0"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Basic health check",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service is up"
+          }
+        }
+      }
+    },
+    "/health-ready": {
+      "get": {
+        "summary": "Readiness probe — 200 only when models are fully loaded",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Models are ready"
+          },
+          "503": {
+            "description": "Models are still loading"
+          },
+          "500": {
+            "description": "Model load error"
+          }
+        }
+      }
+    },
+    "/reload": {
+      "post": {
+        "summary": "Hot-reload models without restarting the container",
+        "tags": [
+          "Model"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pose_config": {
+                  "type": "string",
+                  "example": "/app/models/mmpose/config.py"
+                },
+                "pose_checkpoint": {
+                  "type": "string",
+                  "example": "/app/models/mmpose/checkpoint.pth"
+                },
+                "detector_checkpoint": {
+                  "type": "string",
+                  "example": "/app/models/yolo/yolo12x.pt"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Reload accepted"
+          },
+          "404": {
+            "description": "File not found"
+          },
+          "500": {
+            "description": "Error"
+          }
+        }
+      }
+    },
+    "/webhook": {
+      "post": {
+        "summary": "Label Studio training webhook",
+        "tags": [
+          "Training"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "example": "ANNOTATION_CREATED"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

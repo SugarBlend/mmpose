@@ -1706,29 +1706,6 @@ wheels = [
 ]
 
 [[package]]
-name = "label-studio-ml"
-version = "1.0.9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "appdirs" },
-    { name = "attr" },
-    { name = "attrs" },
-    { name = "colorama" },
-    { name = "flask" },
-    { name = "itsdangerous" },
-    { name = "jinja2" },
-    { name = "label-studio-tools" },
-    { name = "lxml" },
-    { name = "pillow" },
-    { name = "requests" },
-    { name = "werkzeug" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b7/68/81331494d8bab08d215e052444bdd685ad9f26b68ba22f5ceadb86080a30/label-studio-ml-1.0.9.tar.gz", hash = "sha256:122fa7256520b8e09737432dbfad0d6980afd408c67b9e1f9fb6ede31976470a", size = 28246, upload-time = "2023-01-03T15:54:52.149Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/92/d253add75c5a350977e601e07f924131c38545b0d06bf665a968b9f9839a/label_studio_ml-1.0.9-py3-none-any.whl", hash = "sha256:bafa96fb6b6b4c0c7ab4bd4b860137f33622756a3d70899cb91282c543846db3", size = 28607, upload-time = "2023-01-03T15:54:50.023Z" },
-]
-
-[[package]]
 name = "label-studio-sdk"
 version = "2.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2713,7 +2690,6 @@ graphics = [
 labeling = [
     { name = "label-studio" },
     { name = "label-studio-converter" },
-    { name = "label-studio-ml" },
     { name = "label-studio-sdk" },
 ]
 mmlab = [
@@ -2752,7 +2728,6 @@ graphics = [{ name = "pycairo" }]
 labeling = [
     { name = "label-studio", specifier = "==1.21.0" },
     { name = "label-studio-converter", specifier = "==0.0.59" },
-    { name = "label-studio-ml" },
     { name = "label-studio-sdk", specifier = "==2.0.*" },
 ]
 mmlab = [

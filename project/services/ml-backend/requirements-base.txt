@@ -1,0 +1,5 @@
+gunicorn==22.0.0
+label-studio-ml @ git+https://github.com/HumanSignal/label-studio-ml-backend.git
+torch==2.10+cu128
+torchvision==0.25.0+cu128
+--extra-index-url https://download.pytorch.org/whl/cu128
