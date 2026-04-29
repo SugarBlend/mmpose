@@ -5,15 +5,15 @@ import cv2
 from PIL import ImageTk
 import numpy as np
 
-from project.visualizer.drawing import (
+from project.visualizers.space.drawing import (
     resize,
     draw_frame,
     fit_image,
     outlined,
     rgb_to_photoimage,
 )
-from project.visualizer.models import DrawParams, FilterParams, ViewGroupConfig
-from project.visualizer.services import DataService, ImageLoader, TrackBuilder
+from project.visualizers.space.models import DrawParams, FilterParams, ViewGroupConfig
+from project.visualizers.space.services import DataService, ImageLoader, TrackBuilder
 
 
 class ViewGroup:

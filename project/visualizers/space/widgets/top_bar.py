@@ -3,8 +3,8 @@ from tkinter import ttk
 from typing import Callable, Any
 
 
-from project.visualizer.constants import W
-from project.visualizer.style import SliderRow, Toggle, TogRow, vsep
+from project.visualizers.space.constants import W
+from project.visualizers.space.style import SliderRow, Toggle, TogRow, vsep
 
 
 class _LabelProxy:

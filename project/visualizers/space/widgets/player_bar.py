@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable
 
-from project.visualizer.constants import W
-from project.visualizer.style import Toggle, vsep
+from project.visualizers.space.constants import W
+from project.visualizers.space.style import Toggle, vsep
 
 
 class PlayerBar(tk.Frame):

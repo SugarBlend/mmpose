@@ -7,11 +7,11 @@ import tkinter as tk
 import cv2
 import numpy as np
 
-from project.visualizer.constants import W
-from project.visualizer.drawing import resize, draw_frame, fit_image, outlined, rgb_to_photoimage
-from project.visualizer.models import DrawParams
-from project.visualizer.widgets.group_panel import GroupPanel
-from project.visualizer.widgets.view_group import ViewGroup
+from project.visualizers.space.constants import W
+from project.visualizers.space.drawing import resize, draw_frame, fit_image, outlined, rgb_to_photoimage
+from project.visualizers.space.models import DrawParams
+from project.visualizers.space.widgets.group_panel import GroupPanel
+from project.visualizers.space.widgets.view_group import ViewGroup
 
 
 class GridCanvas(tk.Frame):

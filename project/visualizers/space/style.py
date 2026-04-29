@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable
 
-from project.visualizer.constants import W
+from constants import W
 
 
 def apply_style(root: tk.Tk) -> None:

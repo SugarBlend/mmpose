@@ -1,0 +1,31 @@
+# Exclude everything
+**
+
+# Allow directories (IMPORTANT: trailing slash + /**)
+!configs/
+!configs/**
+
+!project/
+!project/**
+
+!tools/
+!tools/**
+
+!requirements/
+!requirements/**
+!requirements.txt
+
+# (опционально) если хочешь оставить root файлы типа Dockerfile
+!Dockerfile
+!docker-compose.yml
+
+project/annotations/
+project/annotations/**
+
+project/checkpoints/
+project/checkpoints/**
+
+project/visualizers
+project/visualizers/**
+project/standard_anns
+project/standard_anns/**

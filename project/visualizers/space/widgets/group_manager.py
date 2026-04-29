@@ -2,9 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 from typing import List, Dict, Any
 
-from project.visualizer.constants import PANEL_BORDER_COLORS, W
-from project.visualizer.models import ViewGroupConfig
-from project.visualizer.widgets.view_group import ViewGroup
+from project.visualizers.space.constants import PANEL_BORDER_COLORS, W
+from project.visualizers.space.models import ViewGroupConfig
+from project.visualizers.space.widgets.view_group import ViewGroup
 
 
 class GroupManagerDialog(tk.Toplevel):

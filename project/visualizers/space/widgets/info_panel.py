@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from typing import Any
-from project.visualizer.constants import HALPE26_KEYPOINT_NAMES, KPT_BGR, W
-from project.visualizer.models import ImageEntry
+from project.visualizers.space.constants import HALPE26_KEYPOINT_NAMES, KPT_BGR, W
+from project.visualizers.space.models import ImageEntry
 
 
 class InfoPanel(tk.Frame):

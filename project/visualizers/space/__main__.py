@@ -4,7 +4,7 @@ import tkinter as tk
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from project.visualizer.controller import AppController
+from controller import AppController
 
 
 def main() -> None:
