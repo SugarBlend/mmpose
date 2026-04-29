@@ -31,4 +31,4 @@ uv pip install . --no-build-isolation
 uv pip install ./-DeployAndServe/dist/*.whl --no-deps
 
 uv pip install git+https://github.com/HumanSignal/label-studio-ml-backend.git#egg=label-studio-ml-backend
-uv pip install numpy<2
+uv pip install "numpy<2"

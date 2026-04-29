@@ -67,17 +67,19 @@ def _save_json(path: Path, struct: dict[str, Any]) -> None:
 @click.command()
 @click.option("--files", type=str, default="D:/NewPoseCustom/stable",
               help="Folder of images to annotate.")
-@click.option("--output-dir", type=str, default="../annotations/detection/coco",
+# @click.option("--output-dir", type=str, default="../annotations/detection/coco",
+@click.option("--output-dir", type=str, default="../annotations/detection_hands/coco",
               help="Output COCO JSON path.")
-@click.option("--yolo-model", type=str, default="yolo12x.pt",
+# @click.option("--yolo-model", type=str, default="yolo12x.pt",
+@click.option("--yolo-model", type=str, default="hands_yolo.pt",
               help="YOLO model weights (name or path).")
 @click.option("--conf", type=float, default=0.25,
               show_default=True, help="Minimum detection confidence threshold.")
 @click.option("--batch-size", type=int, default=100,
               show_default=True, help="Inference batch size.")
-@click.option("--preview", is_flag=True, default=False,
+@click.option("--preview", is_flag=True, default=True,
               help="Show annotated preview window while processing.")
-@click.option("--vis-delay", type=int, default=30,
+@click.option("--vis-delay", type=int, default=0,
               show_default=True, help="cv2.waitKey delay in ms (only with --preview).")
 @click.option("--save-every", type=int, default=500,
               show_default=True, help="Save JSON incrementally every N images.")
