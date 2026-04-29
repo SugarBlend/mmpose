@@ -1,8 +1,8 @@
 import tkinter as tk
 
-from project.visualizer.constants import W
-from project.visualizer.models import DrawParams, ImageEntry
-from project.visualizer.widgets.view_group import ViewGroup
+from project.visualizers.space.constants import W
+from project.visualizers.space.models import DrawParams, ImageEntry
+from project.visualizers.space.widgets.view_group import ViewGroup
 
 
 class GroupPanel(tk.Frame):

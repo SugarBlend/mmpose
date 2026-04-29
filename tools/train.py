@@ -2,6 +2,15 @@
 import argparse
 import os
 import os.path as osp
+import time
+
+import sys
+from pathlib import Path
+import dotenv
+
+dotenv.load_dotenv('./.env')
+sys.path.append(Path(__file__).parent.parent.as_posix())
+__import__('project')
 
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
@@ -9,8 +18,10 @@ from mmengine.runner import Runner
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a pose model')
-    parser.add_argument('config', help='train config file path')
-    parser.add_argument('--work-dir', help='the dir to save logs and models')
+    parser.add_argument('--config', default="configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py", help='train config file path')
+    parser.add_argument('--work-dir',
+                        default=f"D:/MMPoseExp/{time.strftime('%Y-%m-%d %H_%M_%S', time.localtime())}",
+                        help='the dir to save logs and models')
     parser.add_argument(
         '--resume',
         nargs='?',
@@ -159,4 +170,5 @@ def main():
 
 
 if __name__ == '__main__':
+    os.chdir(Path(__file__).parent.parent.as_posix())
     main()

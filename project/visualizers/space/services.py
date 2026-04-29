@@ -9,7 +9,7 @@ import logging
 import cv2
 import numpy as np
 
-from project.visualizer.models import FilterParams, ImageEntry
+from models import FilterParams, ImageEntry
 
 
 class DataService:

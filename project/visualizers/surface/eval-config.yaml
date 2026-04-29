@@ -1,0 +1,241 @@
+# Union configuration for accuracy.py и comparison.py
+#
+# accuracy.py:
+#   python accuracy.py -c eval-config.yaml -o ./results
+#
+# comparison.py:
+#   python comparison.py -c eval-config.yaml
+
+models:
+#  - legend: "Default (RTMPose-X)"
+##    model_path: "checkpoints/rtmpose/rtmpose-m_simcc-body7_pt-body7-halpe26_700e-256x192-4d3e73dd_20230605.pth"
+##    config_path: "../configs/body_2d_keypoint/rtmpose/body8/rtmpose-m_8xb512-700e_body8-halpe26-256x192.py"
+#    model_path: "E:/Projects/mmpose/project/checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"
+#    config_path: "E:/Projects/mmpose/configs/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+#    dataset_folder: "D:/NewPoseCustom/2026-04-10 18-31-04/BL"
+#    ann_file: "E:/Projects/mmpose/project/annotations/detection/2026-04-10 18-31-04/BL.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetune (ViTPose-Base, epoch 210)"
+#    model_path: "D:/MMPoseExp/2026-01-17 14_16_13/epoch_210.pth"
+#    config_path: "D:/MMPoseExp/2026-01-17 14_16_13/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py"
+#    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetune (ViTPose-Base, epoch 40)"
+#    model_path: "D:/MMPoseExp/2026-03-11 17_19_47/epoch_40_.pth"
+#    config_path: "D:/MMPoseExp/2026-03-11 17_19_47/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py"
+#    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetune (ViTPose-Base, epoch 35)"
+#    model_path: "D:/MMPoseExp/2026-03-14 17_44_51/best_AUC_epoch_35_.pth"
+#    config_path: "D:/MMPoseExp/2026-03-14 17_44_51/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py"
+#    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetune (ViTPose-Base, epoch 100)"
+#    model_path: "D:/MMPoseExp/2026-03-17 11_58_34/epoch_100.pth"
+#    config_path: "D:/MMPoseExp/2026-03-17 11_58_34/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+#    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetune (ViTPose-Base, epoch 100 1)"
+#    model_path: "D:/MMPoseExp/2026-03-17 22_23_47/epoch_100.pth"
+#    config_path: "D:/MMPoseExp/2026-03-17 22_23_47/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+#    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetune (ViTPose-Base, epoch 100 2)"
+#    model_path: "D:/MMPoseExp/2026-03-18 12_03_04/epoch_100.pth"
+#    config_path: "D:/MMPoseExp/2026-03-18 12_03_04/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+#    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetune (ViTPose-Base, epoch 30)"
+#    model_path: "D:/MMPoseExp/2026-03-20 14_14_39/epoch_30.pth"
+#    config_path: "D:/MMPoseExp/2026-03-20 14_14_39/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+#    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetune Pytorch (ViTPose-Base)"
+#    model_path: "E:/ViTrackerStaff/models/pose_estimation/mmpose/PyTorch/ViTPose-base-simple-halpe26_8xb64-100e_coco-256x192_20260331.pth"
+#    config_path: "E:/Projects/ViTracker_/core/pose_estimation/MMPose/configs/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192_29.py"
+#    dataset_folder: "D:/NewPoseCustom/2026-04-03 13-14-16/TR"
+#    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/TR.json"
+#    num_joints: 26
+
+  - legend: "Finetune TRT fp32 (ViTPose-Base)"
+    model_path: "E:/ViTrackerStaff/models/pose_estimation/mmpose/TensorRT/vitpose-simple-halpe-base_256x192_fp32.engine"
+    config_path: "E:/Projects/ViTracker_/core/pose_estimation/MMPose/configs/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192_29.py"
+    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+    num_joints: 26
+
+#  - legend: "Finetune TRT fp16 (ViTPose-Base)"
+##    model_path: "E:/ViTrackerStaff/models/pose_estimation/mmpose/TensorRT/vitpose-simple-halpe-base_256x192_fp16.engine"
+##    model_path: "E:/ViTrackerStaff/models/pose_estimation/mmpose/PyTorch/ViTPose-base-simple-halpe26_8xb64-100e_coco-256x192_20260331_old.pth"
+#    model_path: "D:/MMPoseExp/2026-04-16 22_30_24/epoch_50.pth"
+##    model_path: "D:/MMPoseExp/2026-04-14 16_28_41/best_AUC_epoch_110.pth"
+##    config_path: "D:/MMPoseExp/2026-04-14 16_28_41/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192_.py"
+##    config_path: "E:/Projects/ViTracker/core/pose_estimation/MMPose/configs/ViTPose-base-simple-halpe26_8xb64-100e_coco-256x192.yaml"
+#    config_path: "D:/MMPoseExp/2026-04-16 22_30_24/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192_.py"
+#    dataset_folder: "D:/Datasets/val2017/val2017"
+#    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    dataset_folder: "D:/NewPoseCustom/2026-04-10 18-31-04/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/2026-04-10 18-31-04/BL.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+#    num_joints: 26
+
+#  - legend: "Default (RTMPose-X)"
+##    model_path: "checkpoints/rtmpose/rtmpose-m_simcc-body7_pt-body7-halpe26_700e-256x192-4d3e73dd_20230605.pth"
+##    config_path: "../configs/body_2d_keypoint/rtmpose/body8/rtmpose-m_8xb512-700e_body8-halpe26-256x192.py"
+#    model_path: "E:/Projects/mmpose/project/checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"
+#    config_path: "E:/Projects/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+#    dataset_folder: "D:/NewPoseCustom/2026-04-10 18-31-04/BL"
+#    ann_file: "E:/Projects/mmpose/project/annotations/detection/2026-04-10 18-31-04/BL.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+#
+#  - legend: "Default (RTMPose-M)"
+#    model_path: "checkpoints/rtmpose/rtmpose-m_simcc-body7_pt-body7-halpe26_700e-256x192-4d3e73dd_20230605.pth"
+#    config_path: "../configs/body_2d_keypoint/rtmpose/body8/rtmpose-m_8xb512-700e_body8-halpe26-256x192.py"
+##    model_path: "E:/Projects/mmpose/project/checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"
+##    config_path: "E:/Projects/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py"
+#    dataset_folder: "D:/Datasets/val2017/val2017"
+#    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+##    dataset_folder: "D:/NewPoseCustom/2026-04-10 18-31-04/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/2026-04-10 18-31-04/BL.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "Finetuned VitPose-base 26"
+##    model_path: "D:/MMPoseExp/2026-04-19 00_50_33/epoch_100.pth"
+#    model_path: "D:/MMPoseExp/2026-04-19 15_36_26/best_coco_AP_epoch_25.pth"
+#    config_path: "D:/MMPoseExp/2026-04-19 15_36_26/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192_.py"
+##    model_path: "E:/Projects/mmpose/project/checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"
+##    config_path: "E:/Projects/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+#    dataset_folder: "D:/NewPoseCustom/2026-04-10 18-31-04/BL"
+#    ann_file: "E:/Projects/mmpose/project/annotations/detection/2026-04-10 18-31-04/BL.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+
+#  - legend: "RTMW-X 133"
+##    model_path: "D:/MMPoseExp/2026-04-19 00_50_33/epoch_100.pth"
+#    model_path: "C:/Users/Alexander/Downloads/rtmw-x_simcc-cocktail14_pt-ucoco_270e-384x288-f840f204_20231122.pth"
+#    config_path: "configs/wholebody_2d_keypoint/rtmpose/cocktail14/rtmw-x_8xb320-270e_cocktail14-384x288.py"
+##    model_path: "E:/Projects/mmpose/project/checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"
+##    config_path: "E:/Projects/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/coco_wholebody_val_v1.0.json"
+#    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+##    dataset_folder: "D:/NewPoseCustom/2026-04-10 18-31-04/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/2026-04-10 18-31-04/BL.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 133
+
+#  - legend: "New ViTPose"
+##    model_path: "checkpoints/rtmpose/rtmpose-m_simcc-body7_pt-body7-halpe26_700e-256x192-4d3e73dd_20230605.pth"
+##    config_path: "../configs/body_2d_keypoint/rtmpose/body8/rtmpose-m_8xb512-700e_body8-halpe26-256x192.py"
+#    model_path: "D:/MMPoseExp/2026-04-15 19_30_03/best_AUC_epoch_105.pth"
+#    config_path: "D:/MMPoseExp/2026-04-15 19_30_03/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192_.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/standard_anns/halpe_val_v1.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-10-20 12-50-24"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation.json"
+##    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+#    dataset_folder: "D:/NewPoseCustom/2026-04-10 18-31-04/BL"
+#    ann_file: "E:/Projects/mmpose/project/annotations/detection/2026-04-10 18-31-04/BL.json"
+##    dataset_folder: "C:/Users/Alexander/Desktop/out/BL"
+##    ann_file: "E:/Projects/mmpose/project/annotations/detection/coco/BL.json"
+#    num_joints: 26
+#
+#  - legend: "Finetune TRT fp16 (ViTPose-Base) new"
+#    model_path: "E:/ViTrackerStaff/models/pose_estimation/mmpose/TensorRT/vitpose-simple-halpe-base_256x192_fp16.engine"
+##    model_path: "D:/MMPoseExp/2026-04-13 00_42_50/best_AUC_epoch_195.pth"
+#    config_path: "D:/MMPoseExp/2026-04-13 00_42_50/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py"
+#    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+#    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+#    num_joints: 26
+#
+##  - legend: "Finetune TRT int8 (ViTPose-Base)"
+##    model_path: "E:/ViTrackerStaff/models/pose_estimation/mmpose/TensorRT/vitpose-simple-halpe-base_256x192_int8.engine"
+##    config_path: "E:/Projects/ViTracker_/core/pose_estimation/MMPose/configs/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192_29.py"
+##    dataset_folder: "D:/NewPoseCustom/2025-11-26 15-13-27"
+##    ann_file: "E:/Projects/mmpose/project/annotations/Pose Annotation #8.json"
+##    num_joints: 26
+
+  # For adding new model:
+  # - legend: "RTMPose-X"
+  #   model_path: "checkpoints/rtmpose-x/..."
+  #   config_path: "..."
+  #   dataset_folder: "..."
+  #   ann_file: "..."
+  #   num_joints: 26

@@ -1,0 +1,22 @@
+services:
+  mmpose:
+    privileged: true
+    tty: true
+    stdin_open: true
+    image: mmpose_finetuning:0.1.0
+    build:
+      context: ..
+      dockerfile: ./project/Dockerfile
+    entrypoint: [ "/bin/bash" ]
+    ports:
+      - "8082:8082"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities:
+                - gpu
+                - utility
+                - compute
+                - video

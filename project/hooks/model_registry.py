@@ -28,7 +28,7 @@ class MLflowModelRegistryHook(Hook):
 
     def after_val_epoch(self, runner: Runner, metrics: dict[str, float]) -> None:
         current = metrics.get(self.register_on_metric, -1.0)
-        previous_best = runner.message_hub.get_info("best_score")
+        previous_best = runner.message_hub.get_info("best_score") or -1.0
         if current <= previous_best - 1:
             runner.logger.info(
                 f"[{__class__.__name__}] skip to register model in mlflow, reason: current metric "

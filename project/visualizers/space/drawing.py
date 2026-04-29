@@ -3,8 +3,8 @@ import numpy as np
 from PIL import Image, ImageTk
 from typing import Any
 
-from project.visualizer.models import DrawParams
-from project.visualizer.constants import KPT_BGR, SKELETON, BBOX_PALETTE_BGR, USE_CUDA
+from models import DrawParams
+from constants import KPT_BGR, SKELETON, BBOX_PALETTE_BGR, USE_CUDA
 
 
 def outlined(img: np.ndarray, text: str, pos: tuple[int, int], font: int, scale: float, color: tuple[int, int, int],

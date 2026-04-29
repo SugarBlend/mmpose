@@ -6,13 +6,13 @@ from pathlib import Path
 from typing import List, Optional
 import cv2
 
-from project.visualizer.constants import W, FPS_PRESETS
-from project.visualizer.models import DrawParams, FilterParams, ImageEntry, ViewGroupConfig
-from project.visualizer.services import DataService, ImageLoader, TrackBuilder
-from project.visualizer.widgets.view_group import ViewGroup
-from project.visualizer.style import apply_style, hsep
-from project.visualizer.drawing import draw_frame, fit_image, resize, rgb_to_photoimage, outlined
-from project.visualizer.widgets import TopBar, PlayerBar, InfoPanel, GridCanvas, GroupManagerDialog
+from constants import W, FPS_PRESETS
+from models import DrawParams, FilterParams, ImageEntry, ViewGroupConfig
+from services import DataService, ImageLoader, TrackBuilder
+from widgets.view_group import ViewGroup
+from style import apply_style, hsep
+from drawing import draw_frame, fit_image, resize, rgb_to_photoimage, outlined
+from widgets import TopBar, PlayerBar, InfoPanel, GridCanvas, GroupManagerDialog
 
 
 class AppController:
