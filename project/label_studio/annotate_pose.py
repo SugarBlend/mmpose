@@ -16,36 +16,14 @@ from pycocotools.coco import COCO
 from tqdm import tqdm
 
 from deploy2serve.deployment.projects.sapiens.utils.adapters import visualizer_adapter
-from deploy2serve.deployment.projects.sapiens.utils.palettes import COCO_WHOLEBODY_KPTS_COLORS, COCO_WHOLEBODY_SKELETON_INFO
-from palettes import COCO_HALPE26_KPTS_COLORS, COCO_HALPE26_SKELETON_INFO
 
 sys.path.insert(0, Path(__file__).parents[2].as_posix())
 from project.label_studio.pipelines._mmpose import MMPose
 from project.label_studio.pipelines.sapiens import Sapiens
+from ann_utils import structs
+
 
 log = logging.getLogger(__name__)
-
-
-_CATEGORY_26 = {
-    "id": 1, "name": "person", "supercategory": "person",
-    "num_keypoints": 26,
-    "keypoints": [
-        "nose", "left_eye", "right_eye", "left_ear", "right_ear",
-        "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
-        "left_wrist", "right_wrist", "left_hip", "right_hip",
-        "left_knee", "right_knee", "left_ankle", "right_ankle",
-        "head", "neck", "hip", "left_big_toe", "left_small_toe",
-        "left_heel", "right_big_toe", "right_small_toe", "right_heel",
-    ],
-}
-
-_CATEGORY_133 = {
-    "id": 1, "name": "person", "supercategory": "person",
-    "num_keypoints": 133,
-    "keypoints": [f"kp_{i}" for i in range(133)], # placeholder — replace with real names
-}
-
-_CATEGORY_BY_JOINTS = {26: _CATEGORY_26, 133: _CATEGORY_133}
 
 
 def _make_coco_struct(num_joints: int) -> dict[str, Any]:
@@ -58,7 +36,7 @@ def _make_coco_struct(num_joints: int) -> dict[str, Any]:
             "date_created": now.isoformat(),
         },
         "licenses": [{"id": 1, "name": "Unknown", "url": ""}],
-        "categories": [_CATEGORY_BY_JOINTS[num_joints]],
+        "categories": [structs[num_joints].to_coco()],
         "images": [],
         "annotations": [],
     }
@@ -120,28 +98,33 @@ def _draw_preview(
 
 @click.command()
 @click.option("--checkpoints-path", type=str,
-              default=r"../checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth",
+              # default=r"../checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth",
+              # default=r"../checkpoints/rtmpose/rtmw-x_simcc-cocktail14_pt-ucoco_270e-384x288-f840f204_20231122.pth",
+              default=r"../checkpoints/rtmpose/rtmpose-m_simcc-coco-wholebody-hand_pt-aic-coco_210e-256x256-99477206_20230228.pth",
               help="Path to model checkpoint (.pth or .plan).")
 @click.option("--config-path", type=str,
-              default=r"../../configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py",
+              # default=r"../../configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py",
+              # default=r"../../configs/wholebody_2d_keypoint/rtmpose/cocktail14/rtmw-x_8xb320-270e_cocktail14-384x288.py",
+              default=r"../../configs/hand_2d_keypoint/rtmpose/coco_wholebody_hand/rtmpose-m_8xb32-210e_coco-wholebody-hand-256x256.py",
               help="Path to mmpose config (RTMPose only; ignored for Sapiens).")
 @click.option("--images-folder", type=str, default="D:/NewPoseCustom/stable",
               help="Root folder containing the images.")
 @click.option("--detection-annotations", type=str,
-              default="../annotations/detection/coco",
+              # default="../annotations/detection/coco",
+              default="../annotations/detection_hands/coco",
               help="COCO JSON with person bounding-box detections.")
 @click.option("--output-json", type=str,
-              default="../annotations/pose/coco",
+              default="../annotations/pose_hands/coco",
               help="Destination path for the output COCO pose JSON.")
-@click.option("--joints", type=click.Choice(["26", "133"]), default="26", show_default=True,
-              help="Number of keypoints: 26 = Halpe-26 (RTMPose), 133 = WholeBody (Sapiens).")
+@click.option("--joints", type=click.Choice(["21", "26", "133"]), default="21", show_default=True,
+              help="Number of keypoints: 21 = Hands21, 26 = Halpe-26 (RTMPose), 133 = WholeBody (Sapiens).")
 @click.option("--device", type=str, default="cuda:0", show_default=True,
               help="Inference device (RTMPose only).")
-@click.option("--score-thr", type=float, default=0.3, show_default=True,
+@click.option("--score-thr", type=float, default=0.05, show_default=True,
               help="Keypoint visibility threshold for num_keypoints count.")
-@click.option("--preview", is_flag=True, default=False,
+@click.option("--preview", is_flag=True, default=True,
               help="Show annotated preview window while processing.")
-@click.option("--vis-delay", type=int, default=30, show_default=True,
+@click.option("--vis-delay", type=int, default=0, show_default=True,
               help="cv2.waitKey delay in ms (only with --preview).")
 @click.option("--save-every", type=int, default=500, show_default=True,
               help="Save JSON incrementally every N images.")
@@ -165,14 +148,13 @@ def annotate(
     detection_annotations = f"{detection_annotations}/{Path(images_folder).stem}.json"
     detections, images_info = load_detections(detection_annotations)
 
-    if num_joints == 26:
-        model = MMPose(config_path, checkpoints_path, device)
-        meta_info = visualizer_adapter(COCO_HALPE26_SKELETON_INFO, COCO_HALPE26_KPTS_COLORS)
-    elif num_joints == 133:
-        model = Sapiens(checkpoints_path)
-        meta_info = visualizer_adapter(COCO_WHOLEBODY_SKELETON_INFO, COCO_WHOLEBODY_KPTS_COLORS)
-    else:
+    struct = structs.get(num_joints)
+    if not struct:
         raise click.UsageError(f"Unsupported joint count: {num_joints}")
+
+    # model = Sapiens(checkpoints_path)
+    model = MMPose(config_path, checkpoints_path, device)
+    meta_info = visualizer_adapter(struct.skeleton, struct.kpt_colors)
 
     visualizer = FastVisualizer(meta_info, radius=3, line_width=1, kpt_thr=score_thr) if preview else None
 
