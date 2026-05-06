@@ -24,6 +24,7 @@ services:
   # MinIO
   minio:
     image: minio/minio:latest
+    user: "0:0"
     container_name: minio
     networks:
       - mlops-net
@@ -35,8 +36,15 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_SERVER_URL: http://${MINIO_GLOBAL_HOST}:9000
+#      MINIO_SERVER_URL: http://minio:9000
+#      MINIO_SERVER_URL: http://localhost:9000
+#      MINIO_SERVER_URL: http://192.168.88.41:9000
+#      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
     volumes:
-      - ./data/minio:/data
+      # for ubuntu
+      - /ssd/minio:/data
+      # for windows
+#      - ./data/minio:/data
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -47,6 +55,7 @@ services:
   # Label Studio
   labelstudio:
     image: heartexlabs/label-studio:latest
+    user: "0:0"
     container_name: labelstudio
     networks:
       - mlops-net
@@ -62,7 +71,7 @@ services:
       DJANGO_DB: sqlite
       DEBUG: "true"
       LOCAL_FILES_SERVING_ENABLED: "true"
-      LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /data/local-files
+#      LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /data/local-files
       LABEL_STUDIO_USERNAME: ${LABEL_STUDIO_USERNAME}
       LABEL_STUDIO_PASSWORD: ${LABEL_STUDIO_PASSWORD}
       # Label Studio searching MinIO by container name
@@ -70,8 +79,11 @@ services:
       MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
     volumes:
-      - ./data/labelstudio:/label-studio/data
-      - D:/:/data/local-files:ro
+      # for ubuntu
+      - /ssd/labelstudio:/label-studio/data
+      # for windows
+#      - ./data/labelstudio:/label-studio/data
+#      - D:/:/data/local-files:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8081/health" ]
       interval: 15s
@@ -85,8 +97,9 @@ services:
     container_name: ml-backend
     networks:
       - mlops-net
+    restart: unless-stopped
     build:
-      context: ./ml-backend
+      context: ./ml_backend
       args:
         TEST_ENV: ${TEST_ENV}
     environment:
@@ -109,6 +122,9 @@ services:
       labelstudio:
         condition: service_healthy
     volumes:
+      # for ubuntu
+      - /ssd/auto_ml_backend/models:/app/models
+      # for windows
       - ./ml-backend/models:/app/models
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9090/health-ready" ]
