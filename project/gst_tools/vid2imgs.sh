@@ -4,10 +4,10 @@ FILEPATH="$1"
 W="$2"
 H="$3"
 
-NAME = $(basename "${FILEPATH}")
-NAME = "${NAME%.*}"
-DIRPATH = $(dirname "${FILEPATH}")
-OUTDIR = "${DIRPATH}/${NAME}"
+NAME=$(basename "${FILEPATH}")
+NAME="${NAME%.*}"
+DIRPATH=$(dirname "${FILEPATH}")
+OUTDIR="${DIRPATH}/${NAME}"
 
 rm -rf "${OUTDIR}"
 mkdir -p "${OUTDIR}/TL"

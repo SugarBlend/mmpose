@@ -116,6 +116,7 @@ services:
       - MMPOSE_CONFIG=${MMPOSE_CONFIG}
       - YOLO_MODEL=${YOLO_MODEL}
       - DEVICE=${DEVICE:-cpu}
+      - ALLOWED_LABEL_FIELDS=label_body_keypoints,label_foot_keypoints,label_left_hand_keypoints,label_right_hand_keypoints
     ports:
       - "${ML_BACKEND_PORT:-9090}:9090"
     depends_on:
