@@ -125,7 +125,7 @@ services:
       # for ubuntu
       - /ssd/auto_ml_backend/models:/app/models
       # for windows
-      - ./ml-backend/models:/app/models
+#      - ./ml-backend/models:/app/models
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9090/health-ready" ]
       interval: 15s
