@@ -36,15 +36,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_SERVER_URL: http://${MINIO_GLOBAL_HOST}:9000
-#      MINIO_SERVER_URL: http://minio:9000
-#      MINIO_SERVER_URL: http://localhost:9000
-#      MINIO_SERVER_URL: http://192.168.88.41:9000
-#      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
     volumes:
-      # for ubuntu
-      - /ssd/minio:/data
-      # for windows
-#      - ./data/minio:/data
+      - ${MINIO_DATA_PATH}:/data
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -80,9 +73,8 @@ services:
       MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
     volumes:
       # for ubuntu
-      - /ssd/labelstudio:/label-studio/data
+      - ${LS_DATA_PATH}:/label-studio/data
       # for windows
-#      - ./data/labelstudio:/label-studio/data
 #      - D:/:/data/local-files:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8081/health" ]
@@ -123,10 +115,7 @@ services:
       labelstudio:
         condition: service_healthy
     volumes:
-      # for ubuntu
-      - /ssd/auto_ml_backend/models:/app/models
-      # for windows
-#      - ./ml-backend/models:/app/models
+      - ${LS_ML_DATA_PATH}:/app/models
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9090/health-ready" ]
       interval: 15s
@@ -149,6 +138,39 @@ services:
                 - utility
                 - compute
                 - video
+
+  # MLflow
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: mlflow
+    networks:
+      - mlops-net
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ${MLFLOW_DATA_PATH}:/mlflow
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root s3://mlflow-artifacts
+      --host 0.0.0.0
+      --port 8082
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/health" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
 networks:
   mlops-net:
