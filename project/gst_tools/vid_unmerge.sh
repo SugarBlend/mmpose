@@ -1,10 +1,10 @@
 #!/bin/bash
 
-FILEPATH = "$1"
-W = "$2"
-H = "$3"
-OUTDIR = "$4"
-PREFIX = "$5"
+FILEPATH="$1"
+W="$2"
+H="$3"
+OUTDIR="$4"
+PREFIX="$5"
 
 mkdir -p "${OUTDIR}"
 
