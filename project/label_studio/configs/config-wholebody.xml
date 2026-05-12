@@ -10,7 +10,7 @@
   <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
   	<Collapse open="true">
       <Panel value="Body Keypoints (17 points)">
-        <KeyPointLabels name="label_body_keypoints" toName="image" strokeWidth="0.1">
+        <KeyPointLabels name="label_body_keypoints" toName="image" strokeWidth="0.1" opacity="0.5">
           <Label value="nose" background="#BB00FF" model_index="0" category="person"/>
           <Label value="left_eye" background="#BB00FF" model_index="1" category="person"/>
           <Label value="right_eye" background="#BB00FF" model_index="2" category="person"/>
@@ -36,7 +36,7 @@
   <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
   	<Collapse open="true">
       <Panel value="Foot Keypoints (6 points)">
-        <KeyPointLabels name="label_foot_keypoints" toName="image" strokeWidth="0.1">
+        <KeyPointLabels name="label_foot_keypoints" toName="image" strokeWidth="0.1" opacity="0.5">
           <Label value="left_big_toe" background="#FF009D" model_index="17" category="person"/>
           <Label value="left_small_toe" background="#FF009D" model_index="18" category="person"/>
           <Label value="left_heel" background="#FF009D" model_index="19" category="person"/>
@@ -51,7 +51,7 @@
   <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
   	<Collapse open="false">
       <Panel value="Face Keypoints (68 points)">
-        <KeyPointLabels name="label_face_keypoints" toName="image" strokeWidth="0.1">
+        <KeyPointLabels name="label_face_keypoints" toName="image" strokeWidth="0.1" opacity="0.5">
           <Label value="face_00" background="#355E28" model_index="23" category="person"/>
           <Label value="face_01" background="#355E28" model_index="24" category="person"/>
           <Label value="face_02" background="#355E28" model_index="25" category="person"/>
@@ -131,7 +131,7 @@
         <View style="border: 1px solid #3D3D3D; padding: 5px; margin: 5px; border-radius: 3px;">
           <Collapse open="true">
             <Panel value="Left Hand (21 points)">
-              <KeyPointLabels name="label_left_hand_keypoints" toName="image" strokeWidth="0.1">
+              <KeyPointLabels name="label_left_hand_keypoints" toName="image" strokeWidth="0.1" opacity="0.5">
                 <Label value="left_hand_root" background="#295396" model_index="91" category="person"/>
                 <Label value="left_thumb1" background="#295396" model_index="92" category="person"/>
                 <Label value="left_thumb2" background="#295396" model_index="93" category="person"/>
@@ -160,7 +160,7 @@
         <View style="border: 1px solid #3D3D3D; padding: 5px; margin: 5px; border-radius: 3px;">
           <Collapse open="true">
             <Panel value="Right Hand (21 points)">
-              <KeyPointLabels name="label_right_hand_keypoints" toName="image" strokeWidth="0.1">
+              <KeyPointLabels name="label_right_hand_keypoints" toName="image" strokeWidth="0.1" opacity="0.5">
                 <Label value="right_hand_root" background="#BF8528" model_index="112" category="person"/>
                 <Label value="right_thumb1" background="#BF8528" model_index="113" category="person"/>
                 <Label value="right_thumb2" background="#BF8528" model_index="114" category="person"/>

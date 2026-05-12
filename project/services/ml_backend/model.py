@@ -281,8 +281,18 @@ class PoseEstimationModel(LabelStudioMLBase):
 
             results.append(make_rectanglelabels(x1, y1, x2, y2, img_w, img_h, rect_id, mean_score))
 
+            allowed_from_names = set(os.getenv(
+                "ALLOWED_LABEL_FIELDS",
+                "label_body_keypoints,label_foot_keypoints"
+            ).split(","))
+            self.logger.debug(f"Allowed label fields: {allowed_from_names}")
+
             for kpt_name, kpt_xy, kpt_score in zip(joint_names, kpts, kpt_scores):
                 if float(kpt_score) < self.kpt_thresh:
+                    continue
+
+                from_name = label_fields[kpt_name]
+                if from_name not in allowed_from_names:
                     continue
 
                 results.append(
@@ -290,7 +300,7 @@ class PoseEstimationModel(LabelStudioMLBase):
                         kx=float(kpt_xy[0]), ky=float(kpt_xy[1]),
                         img_w=img_w, img_h=img_h,
                         kpt_name=kpt_name,
-                        from_name=label_fields[kpt_name],
+                        from_name=from_name,
                         rect_id=rect_id,
                         score=float(kpt_score),
                     ),

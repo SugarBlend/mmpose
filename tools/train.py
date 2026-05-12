@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 import dotenv
 
-dotenv.load_dotenv('./.env')
+dotenv.load_dotenv(f'{Path(__file__).parent}/.env')
 sys.path.append(Path(__file__).parent.parent.as_posix())
 __import__('project')
 

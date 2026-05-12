@@ -10,7 +10,7 @@
   <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
   	<Collapse open="true">
       <Panel value="Body Keypoints (20 points)">
-        <KeyPointLabels name="label_body_keypoints" toName="image" strokeWidth="0.1">
+        <KeyPointLabels name="label_body_keypoints" toName="image" strokeWidth="0.1" opacity="0.5">
           <Label value="nose" background="#00008B" model_index="0" category="person"/>
           <Label value="left_eye" background="#FF4500" model_index="1" category="person"/>
           <Label value="right_eye" background="#BB00FF" model_index="2" category="person"/>
@@ -38,7 +38,7 @@
   <View style="border: 2px solid #3D3D3D; padding: 10px; margin: 5px; border-radius: 5px;">
   	<Collapse open="true">
       <Panel value="Foot Keypoints (6 points)">
-        <KeyPointLabels name="label_foot_keypoints" toName="image" strokeWidth="0.1">
+        <KeyPointLabels name="label_foot_keypoints" toName="image" strokeWidth="0.1" opacity="0.5">
           <Label value="left_big_toe" background="#FF4500" model_index="20" category="person"/>
           <Label value="right_big_toe" background="#BB00FF" model_index="21" category="person"/>
           <Label value="left_small_toe" background="#FF4500" model_index="22" category="person"/>
