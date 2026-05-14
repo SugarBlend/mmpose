@@ -64,23 +64,24 @@ def download_annotations(
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Pose model evaluation — mAP / mAR with flexible keypoint subsets")
-    parser.add_argument("--access_key", "-c", type=str, required=True, help="")
-    parser.add_argument("--secret_key", "-o", type=str, required=True, help="")
-    parser.add_argument("--bucket_name", type=str, required=True, help="")
-    parser.add_argument("--endpoint_url", type=str, required=True, help="")
-    parser.add_argument("--prefix", type=str, required=True, help="")
-    parser.add_argument("--local_dir", type=str, default="./", help="")
+    parser = argparse.ArgumentParser(description="Data fetcher from any s3 object storage service")
+    parser.add_argument("--access_key", "-c", type=str, required=True, help="Access key for S3 object storage.")
+    parser.add_argument("--secret_key", "-o", type=str, required=True, help="Secret key for S3 object storage.")
+    parser.add_argument("--bucket_name", type=str, required=True, help="Bucket name for S3 object storage.")
+    parser.add_argument("--endpoint_url", type=str, required=True, help="Service address: <host>:<port>")
+    parser.add_argument("--prefix", type=str, required=True, help="Path relative to bucket_name for data")
+    parser.add_argument("--local_dir", type=str, default="./", help="Path to local directory for storing "
+                                                                    "downloaded data")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = _parse_args()
     download_annotations(
-        endpoint_url=args.endpoint_url, #"http://83.243.65.173:9000",
-        access_key=args.access_key, #"admin",
-        secret_key=args.secret_key, #"adminpassword123",
-        bucket_name=args.bucket_name, #"datasets",
-        prefix=args.prefix, #"Coco2017/coco_wholebody_train_v1.0.json",
-        local_dir=args.local_dir #"./",
+        endpoint_url=args.endpoint_url,
+        access_key=args.access_key,
+        secret_key=args.secret_key,
+        bucket_name=args.bucket_name,
+        prefix=args.prefix,
+        local_dir=args.local_dir
     )
