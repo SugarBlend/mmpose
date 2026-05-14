@@ -132,7 +132,7 @@ class ImageLoader:
         if not self.directory:
             return None
 
-        image_path = os.path.join(self.directory, Path(filename).name)
+        image_path = os.path.join(self.directory, filename)
         if not os.path.exists(image_path):
             image_path = self._search(filename)
 

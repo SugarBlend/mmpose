@@ -4,7 +4,8 @@ from PIL import Image, ImageTk
 from typing import Any
 
 from models import DrawParams
-from constants import KPT_BGR, SKELETON, BBOX_PALETTE_BGR, USE_CUDA
+from constants import BBOX_PALETTE_BGR, USE_CUDA
+from project.label_studio.ann_utils import structs
 
 
 def outlined(img: np.ndarray, text: str, pos: tuple[int, int], font: int, scale: float, color: tuple[int, int, int],
@@ -16,8 +17,10 @@ def outlined(img: np.ndarray, text: str, pos: tuple[int, int], font: int, scale:
                 cv2.putText(img, text, (x + dx, y + dy), font, scale, (0, 0, 0), thickness + 1)
     cv2.putText(img, text, pos, font, scale, color, thickness)
 
-def kpt_color_bgr(i: int) -> tuple[int, int, int]:
-    return KPT_BGR[i] if i < len(KPT_BGR) else (180, 180, 180)
+
+def kpt_color_bgr(color: tuple[int, int, int], i: int) -> tuple[int, int, int]:
+    return color[i] if i < len(color) else (180, 180, 180)
+
 
 def blend_rect(
     img: np.ndarray, x1: int, y1: int, x2: int, y2: int, color_bgr: tuple[int, int, int], alpha: float
@@ -33,10 +36,11 @@ def blend_rect(
     cv2.addWeighted(ov, alpha, roi, 1 - alpha, 0, roi)
     img[y1: y2, x1: x2] = roi
 
-def draw_tracks(img: np.ndarray, track_window: dict[int, Any], params: DrawParams) -> None:
+
+def draw_tracks(img: np.ndarray, track_window: dict[int, Any], params: DrawParams, colors: tuple[int, int, int]) -> None:
     for _ai, kd in track_window.items():
         for ki, pts_list in kd.items():
-            base = kpt_color_bgr(ki)
+            base = kpt_color_bgr(colors, ki)
             pts = [(x, y) for _, x, y in pts_list][-max(1, params.track_length):]
             if len(pts) < 2:
                 continue
@@ -48,10 +52,8 @@ def draw_tracks(img: np.ndarray, track_window: dict[int, Any], params: DrawParam
                 thick = max(1, int(params.skel_thickness * t * 0.8))
                 cv2.line(img, pts[i - 1], pts[i], c, thick)
 
-def draw_frame(img: np.ndarray, annotations: list[dict[str, Any]], params: DrawParams, track_window = None) -> None:
-    if params.show_tracks and track_window:
-        draw_tracks(img, track_window, params)
 
+def draw_frame(img: np.ndarray, annotations: list[dict[str, Any]], params: DrawParams, track_window = None) -> None:
     for idx, ann in enumerate(annotations):
         if params.show_bbox and ann.get("bbox"):
             bbox = ann["bbox"]
@@ -64,13 +66,25 @@ def draw_frame(img: np.ndarray, annotations: list[dict[str, Any]], params: DrawP
                 cv2.rectangle(img, (x, y), (x + w, y + h), bc, 2)
                 if params.show_ann_ids:
                     outlined(img, f"#{idx}", (x + 4, y - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.5, bc, 1)
-        joints = ann.get("keypoints", [])
+
+        joints = list(ann.get("keypoints", []))
+        joints.extend(ann.get("foot_kpts", []))
+        joints.extend(ann.get("face_kpts", []))
+        joints.extend(ann.get("lefthand_kpts", []))
+        joints.extend(ann.get("righthand_kpts", []))
+
         if not joints or len(joints) % 3 != 0:
             continue
 
         num_joints = len(joints) // 3
+        struct = structs.get(num_joints)
+        if not struct:
+            continue
+
         if params.show_skeleton:
-            for i1, i2, sc in SKELETON:
+            for value in struct.skeleton.values():
+                i1, i2 = value.link
+                sc = value.color
                 if i1 >= num_joints or i2 >= num_joints:
                     continue
                 x1, y1, v1 = int(joints[i1 * 3]), int(joints[i1 * 3 + 1]), joints[i1 * 3 + 2]
@@ -83,12 +97,16 @@ def draw_frame(img: np.ndarray, annotations: list[dict[str, Any]], params: DrawP
             for i in range(num_joints):
                 x, y, v = int(joints[i * 3]), int(joints[i * 3 + 1]), joints[i * 3 + 2]
                 if v > 0:
-                    c = kpt_color_bgr(i)
+                    c = kpt_color_bgr(struct.kpt_colors, i)
                     cv2.circle(img,(x, y), r + 1,(0, 0, 0),1)
                     cv2.circle(img,(x, y), r, c, -1)
                     if params.show_joint_ids:
                         outlined(img, str(i),(x + r + 2, y - r - 2), cv2.FONT_HERSHEY_SIMPLEX,
                                  params.font_scale, c, 1)
+
+        if params.show_tracks and track_window:
+            draw_tracks(img, track_window, params, struct.kpt_colors)
+
 
 def fit_image(iw: int, ih: int, cw: int, ch: int) -> tuple[int, int]:
     if iw / ih > cw / ch:
