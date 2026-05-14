@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 from typing import Any
-from project.visualizers.space.constants import HALPE26_KEYPOINT_NAMES, KPT_BGR, W
+import itertools
+from project.visualizers.space.constants import W
 from project.visualizers.space.models import ImageEntry
+from project.label_studio.ann_utils import structs
 
 
 class InfoPanel(tk.Frame):
@@ -107,6 +109,8 @@ class InfoPanel(tk.Frame):
             self._show_detail(ann, flat_idx, grp_name)
 
     def _show_detail(self, ann: dict[str, Any], flat_idx: int, group_name: str = "") -> None:
+        names = None
+
         label = f"Annotation #{flat_idx}"
         if group_name:
             label += f"  [{group_name}]"
@@ -123,10 +127,15 @@ class InfoPanel(tk.Frame):
             txt.insert("end", ": ", "dim")
             if key == "keypoints" and isinstance(val, list) and len(val) % 3 == 0:
                 txt.insert("end", "[\n", "dim")
+                extended_kpts_names = ["keypoints", "foot_kpts", "face_kpts", "lefthand_kpts", "righthand_kpts"]
+                val = list(itertools.chain.from_iterable(
+                    ann.get(name, []) for name in extended_kpts_names
+                ))
                 nk = len(val) // 3
+                names = structs[nk].keypoints
                 for i in range(nk):
                     x, y, v = val[i * 3], val[i * 3 + 1], val[i * 3 + 2]
-                    nm = HALPE26_KEYPOINT_NAMES[i] if i < len(HALPE26_KEYPOINT_NAMES) else str(i)
+                    nm = names[i] if i < len(names) else str(i)
                     txt.insert("end", f"    # {i:>2} {nm:<16} ", "dim")
                     txt.insert("end", f"x={x:.1f}  y={y:.1f}  v={v}\n", "val")
                 txt.insert("end", "  ]\n", "dim")
@@ -139,6 +148,14 @@ class InfoPanel(tk.Frame):
                 txt.insert("end", f"{val}\n", "val")
         txt.insert("end", "}", "dim")
         txt.config(state="disabled")
+
+        if names:
+            colors = structs[nk].kpt_colors
+            self._update_legend(names, colors)
+        else:
+            for (cell, *_) in self._legend_rows:
+                cell.grid_remove()
+            return
 
     def update_ann(self, entry: ImageEntry) -> None:
         self._ann_hdr_lbl.config(text="Frame annotations")
@@ -207,17 +224,42 @@ class InfoPanel(tk.Frame):
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         sb.pack(side=tk.RIGHT,fill=tk.Y)
 
-        grid = tk.Frame(inn, bg=W["surface"])
-        grid.pack(fill=tk.BOTH, expand=True, padx=6, pady=4)
+        self.grid = tk.Frame(inn, bg=W["surface"])
+        self.grid.pack(fill=tk.BOTH, expand=True, padx=6, pady=4)
 
-        for i, name in enumerate(HALPE26_KEYPOINT_NAMES):
-            bgr = KPT_BGR[i] if i < len(KPT_BGR) else (150, 150, 150)
-            hx = "#%02x%02x%02x" % (bgr[2], bgr[1], bgr[0])
+        self._legend_rows: list[tuple] = []
+
+    def _update_legend(self, names: list[str], colors: list) -> None:
+        n = len(names)
+
+        while len(self._legend_rows) < n:
+            i = len(self._legend_rows)
             row, col = divmod(i, 2)
-            cell = tk.Frame(grid, bg=W["surface"])
+
+            cell = tk.Frame(self.grid, bg=W["surface"])
             cell.grid(row=row, column=col, sticky="w", padx=3, pady=1)
+
             sw = tk.Canvas(cell, width=11, height=11, bg=W["surface"], highlightthickness=0)
             sw.pack(side=tk.LEFT, padx=(0, 4))
-            sw.create_oval(1, 1, 10, 10, fill=hx, outline="")
-            tk.Label(cell, text=f"{i:>2}:", bg=W["surface"], fg=W["dim"], font=(self.font, 8), width=3).pack(side=tk.LEFT)
-            tk.Label(cell, text=name, bg=W["surface"], fg=W["text"], font=(self.font, 8), width=16, anchor="w").pack(side=tk.LEFT)
+            oval = sw.create_oval(1, 1, 10, 10, fill="#ffffff", outline="")
+
+            lbl_idx = tk.Label(cell, text="", bg=W["surface"], fg=W["dim"],
+                               font=(self.font, 8), width=3)
+            lbl_idx.pack(side=tk.LEFT)
+
+            lbl_name = tk.Label(cell, text="", bg=W["surface"], fg=W["text"],
+                                font=(self.font, 8), width=16, anchor="w")
+            lbl_name.pack(side=tk.LEFT)
+
+            self._legend_rows.append((cell, sw, oval, lbl_idx, lbl_name))
+
+        for i, (cell, sw, oval, lbl_idx, lbl_name) in enumerate(self._legend_rows):
+            if i < n:
+                bgr = colors[i] if i < len(colors) else (150, 150, 150)
+                hx = "#%02x%02x%02x" % (bgr[2], bgr[1], bgr[0])
+                sw.itemconfig(oval, fill=hx)
+                lbl_idx.config(text=f"{i:>2}:")
+                lbl_name.config(text=names[i])
+                cell.grid()
+            else:
+                cell.grid_remove()
