@@ -166,7 +166,8 @@ class LSConverter(object):
                 "keypoints": joints_tensor.flatten().tolist(),
                 "iscrowd": 0,
                 "ignore": 0,
-                "num_keypoints": 1
+                "num_keypoints": 1,
+                "category_id": 1
             }
             annotations.append(annotation)
         else:
