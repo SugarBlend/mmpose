@@ -44,7 +44,8 @@ class LSConverter(object):
         joints_number = len(self.label_values)
 
         for idx, task in enumerate(tasks):
-            image_name = Path(unquote(task["data"]["image"])).name
+            # TODO: bad practice to using default bucket hardcore..
+            image_name = Path(unquote(task["data"]["image"])).relative_to("s3://datasets").as_posix()
             image_id = task["id"]
 
             if not task.get("annotations"):
@@ -88,9 +89,13 @@ class LSConverter(object):
                     elif label["type"] == "polygonlabels":
                         self.process_polygon(label, annotations)
                     elif label["type"] == "keypointlabels":
-                        self.process_keypoints(
-                            label, joints_tensor, annotations, image_id, self.category_name_to_id[category_name]
-                        )
+                        try:
+                            self.process_keypoints(
+                                label, joints_tensor, annotations, image_id, self.category_name_to_id[category_name]
+                            )
+                        except KeyError as error:
+                            # Case when anns schema from xml doesn't correspondence with labels from LS
+                            logger.warning(error)
 
         description = {
             "images": images,
