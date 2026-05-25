@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Copyright (c) OpenMMLab. All rights reserved.
 
+set -a
+. $(pwd)/tools/.env
+set +a
+
 CONFIG=$1
 GPUS=$2
 NNODES=${NNODES:-1}
@@ -16,5 +20,5 @@ python -m torch.distributed.launch \
     --nproc_per_node=$GPUS \
     --master_port=$PORT \
     $(dirname "$0")/train.py \
-    $CONFIG \
+    --config $CONFIG \
     --launcher pytorch ${@:3}
