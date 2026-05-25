@@ -22,5 +22,6 @@ class SafeMLflowVisBackend(MLflowVisBackend):
         super().add_scalars(safe_dict, step, file_path, **kwargs)
 
     def add_image(self, name: str, image: np.ndarray, step: int = 0, **kwargs) -> None:
-        name += ".jpg"
+        if not name.endswith(('.jpg', '.png', '.jpeg')):
+            name += '.jpg'
         super().add_image(name, image, step, **kwargs)

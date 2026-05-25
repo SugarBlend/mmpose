@@ -20,14 +20,14 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a pose model')
     parser.add_argument('--config', default="configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py", help='train config file path')
     parser.add_argument('--work-dir',
-                        default=f"D:/MMPoseExp/{time.strftime('%Y-%m-%d %H_%M_%S', time.localtime())}",
+                        default=f"Exps/{time.strftime('%Y-%m-%d %H_%M_%S', time.localtime())}",
                         help='the dir to save logs and models')
     parser.add_argument(
         '--resume',
         nargs='?',
         type=str,
         const='auto',
-        help='If specify checkpint path, resume from it, while if not '
+        help='If specify checkpoint path, resume from it, while if not '
         'specify, try to auto resume from the latest checkpoint '
         'in the work directory.')
     parser.add_argument(
