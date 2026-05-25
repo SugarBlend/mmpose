@@ -160,7 +160,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--output_dir",
-        default="split_output",
+        default="../annotations/split",
         help="Directory to save train.json / val.json / test.json (default: split_output)",
     )
     parser.add_argument(
