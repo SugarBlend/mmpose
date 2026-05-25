@@ -1,5 +1,5 @@
 set -a
-source ../services/.env
+source $(pwd)/project/services/.env
 set +a
 
 dvc remote add -d minio s3://dvc-cache
