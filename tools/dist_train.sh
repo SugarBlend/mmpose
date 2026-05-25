@@ -5,6 +5,8 @@ set -a
 . $(pwd)/tools/.env
 set +a
 
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
+
 CONFIG=$1
 GPUS=$2
 NNODES=${NNODES:-1}

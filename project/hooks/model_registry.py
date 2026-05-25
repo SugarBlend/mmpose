@@ -3,6 +3,11 @@ import mlflow.pytorch
 from mmengine.hooks import Hook
 from mmengine.registry import HOOKS
 from mmengine.runner import Runner
+import torch.distributed as dist
+
+
+def is_main_process() -> bool:
+    return not dist.is_initialized() or dist.get_rank() == 0
 
 
 @HOOKS.register_module()
@@ -20,6 +25,9 @@ class MLflowModelRegistryHook(Hook):
         self._vis_backend = None
 
     def before_run(self, runner: Runner) -> None:
+        if not is_main_process():
+            return
+
         for vis_backend in runner.visualizer._vis_backends.values():
             if hasattr(vis_backend, "_mlflow"):
                 active = vis_backend._mlflow.active_run()
@@ -35,6 +43,9 @@ class MLflowModelRegistryHook(Hook):
             )
 
     def after_val_epoch(self, runner: Runner, metrics: dict[str, float]) -> None:
+        if not is_main_process():
+            return
+
         current = metrics.get(self.register_on_metric, -1.0)
         previous_best = runner.message_hub.get_info("best_score") or -1.0
         if current <= previous_best:
