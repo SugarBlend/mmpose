@@ -2,10 +2,13 @@ import os
 from pathlib import Path
 import boto3
 import botocore.client
+import cv2
+import numpy as np
 from botocore.client import Config
 from mmengine.fileio.backends import BaseStorageBackend
 from mmengine.fileio.backends.registry_utils import register_backend
 from typing import Union, Tuple, Optional, Iterator
+from tenacity import retry, stop_after_attempt, retry_if_exception_type, wait_exponential
 
 
 @register_backend("minio", prefixes=["minio"])
@@ -39,9 +42,29 @@ class MinIOBackend(BaseStorageBackend):
     def _clean(filepath: str) -> str:
         return Path(filepath.removeprefix("minio://")).as_posix().lstrip("/")
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.5, min=0.5, max=2),
+        retry=retry_if_exception_type((RuntimeError, ValueError)),
+        reraise=True
+    )
+    def _fetch_from_minio(self, key: str) -> bytes:
+        response = self._get_client().get_object(Bucket=self.bucket_name, Key=key)
+        data = response["Body"].read()
+
+        arr = np.frombuffer(data, dtype=np.uint8)
+        if cv2.imdecode(arr, cv2.IMREAD_COLOR) is None:
+            raise ValueError(f"Failed to decode bytes to image, maybe received corrupted data? Key: '{key}'")
+
+        return data
+
     def get(self, filepath: str) -> bytes:
-        response = self._get_client().get_object(Bucket=self.bucket_name, Key=self._clean(filepath))
-        return response["Body"].read()
+        try:
+            return self._fetch_from_minio(self._clean(filepath))
+        except self._get_client().exceptions.NoSuchKey:
+            raise FileNotFoundError(f"MinIO: key not found: {self._clean(filepath)}")
+        except Exception as error:
+            raise RuntimeError(f"MinIO get failed for {filepath}: {error}")
 
     def remove(self, filepath: str) -> None:
         self._get_client().delete_object(Bucket=self.bucket_name, Key=self._clean(filepath))
