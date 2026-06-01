@@ -18,7 +18,8 @@ dependencies = [
     "mlflow==2.22.*",
     "tensorrt==10.9.0.34",
     "dvc==3.67.1",
-    "dvc-s3==3.3.0"
+    "dvc-s3==3.3.0",
+    "tenacity"
 ]
 
 [dependency-groups]

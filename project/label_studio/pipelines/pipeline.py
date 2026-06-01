@@ -58,11 +58,13 @@ class MMPipeline(object):
         self._std = torch.tensor(std, dtype=torch.float32).reshape(3, 1, 1).cuda()
 
     # bboxes in "xywh" format
-    def __call__(self, image_path: str, bboxes: List[List[float]]) -> List[PoseDataSample]:
+    def __call__(self, image_path: str | np.ndarray, bboxes: List[List[float]]) -> List[PoseDataSample]:
         if self.pose_checkpoint.endswith("pth"):
             results = inference_topdown(self.model, image_path, bboxes, bbox_format="xywh")
         else:
-            img = cv2.imread(image_path)
+            if isinstance(image_path, str):
+                img = cv2.imread(image_path)
+
             if isinstance(bboxes, list):
                 bboxes = np.array(bboxes)
             bboxes = bbox_xywh2xyxy(bboxes)
