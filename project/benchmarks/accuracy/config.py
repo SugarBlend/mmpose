@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import numpy as np
 from typing import Optional
 import yaml
 
@@ -72,6 +73,7 @@ class EvalConfig:
     radar_xticks: Optional[list[float]] = None
     save_dir: Optional[str] = None
     show_plot: bool = True
+    iou_thrs: list[float] | np.ndarray | None = None
 
     @classmethod
     def load(cls, path: str) -> "EvalConfig":
@@ -86,6 +88,7 @@ class EvalConfig:
             radar_xticks=raw.get("radar_xticks"),
             save_dir=raw.get("save_dir"),
             show_plot=raw.get("show_plot", True),
+            iou_thrs=raw.get("iou_thrs", None),
         )
 
     def dump(self, path: str) -> None:

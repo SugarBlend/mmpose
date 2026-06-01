@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import cv2
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -50,7 +51,13 @@ class PoseMetricEvaluator(object):
             26: self._halpe_callback
         }
 
-    def _build_metric(self, ann_file: str, anns_schema: str, converter: str) -> BaseMetric:
+    def _build_metric(
+        self,
+        ann_file: str,
+        anns_schema: str,
+        converter: str,
+        iou_thrs: list[float] | np.ndarray | None
+    ) -> BaseMetric:
         self.coco = COCO(ann_file)
         num_joints = len(SKELETON_SUBSETS[anns_schema]["all"])
         self.is_wholebody = (num_joints == 133)
@@ -58,18 +65,19 @@ class PoseMetricEvaluator(object):
         params = dict(
             ann_file=ann_file,
             iou_type="keypoints",
-            score_mode="bbox",
+            score_mode="keypoint",
             keypoint_score_thr=0.2,
-            nms_mode="none",
-            nms_thr=0.5,
+            nms_mode="oks_nms",
+            nms_thr=0.9,
             format_only=False,
-            use_area=False,
+            use_area=True,
+            iou_thrs=iou_thrs,
         )
 
         if self.is_wholebody:
             from patches import CocoWholeBodyMetric as Metric
         else:
-            from mmpose.evaluation.metrics import CocoMetric as Metric
+            from patches import CocoMetric as Metric
             import maps
 
             mapping = getattr(maps, converter)
@@ -119,10 +127,10 @@ class PoseMetricEvaluator(object):
 
         return pose_checkpoints.as_posix(), pose_config.as_posix()
 
-    def _halpe_callback(self, result: PoseDataSample, ann: dict[str, Any], img_path: str) -> PoseDataSample:
+    def _halpe_callback(self, result: PoseDataSample, ann: dict[str, Any], data: str | np.ndarray) -> PoseDataSample:
         inst = result.pred_instances
 
-        halpe_inst = self.pipeline(img_path, [ann["bbox"]])[0].pred_instances
+        halpe_inst = self.pipeline(data, [ann["bbox"]])[0].pred_instances
 
         for key, values in _HALPE2CWB.items():
             src_ids, dst_ids = values
@@ -135,7 +143,7 @@ class PoseMetricEvaluator(object):
 
         return result
 
-    def _hands21_callback(self, result: PoseDataSample, ann: dict[str, Any], img_path: str) -> PoseDataSample:
+    def _hands21_callback(self, result: PoseDataSample, ann: dict[str, Any], data: str | np.ndarray) -> PoseDataSample:
         hand_bboxes: list[list[float]] = []
         hand_indices: list[tuple[str, int]] = []
 
@@ -147,7 +155,7 @@ class PoseMetricEvaluator(object):
 
         if hand_bboxes:
             inst = result.pred_instances
-            hand_results = self.pipeline(img_path, hand_bboxes)
+            hand_results = self.pipeline(data, hand_bboxes)
             for idx, (name, pts) in enumerate(hand_indices):
                 num_kp = hand_results[idx].pred_instances.keypoints.shape[1]
                 inst.keypoints[:, pts: pts + num_kp] = hand_results[idx].pred_instances.keypoints
@@ -165,15 +173,25 @@ class PoseMetricEvaluator(object):
         if inner_callback_func is None:
             inner_callback_func = lambda result, *args, **kwargs: result
 
+        if dataset_folder.startswith("minio://"):
+            from project.hooks.minio_backend import MinIOBackend
+            client = MinIOBackend()
+
         for img_id in tqdm(self.coco.getImgIds(), desc="Processing images", ncols=70):
             img_info = self.coco.loadImgs(img_id)[0]
-            img_path = os.path.join(dataset_folder, img_info["file_name"])
+
+            if dataset_folder.startswith("minio://"):
+                bytes_data = client.get(img_info["file_name"])
+                arr = np.frombuffer(bytes_data, dtype=np.uint8)
+                data = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            else:
+                data = os.path.join(dataset_folder, img_info["file_name"])
 
             for ann in self.coco.imgToAnns.get(img_id, []):
-                batch_results_body = pipeline(img_path, [ann["bbox"]])
+                batch_results_body = pipeline(data, [ann["bbox"]])
                 result = batch_results_body[0]
 
-                result = inner_callback_func(result, ann, img_path)
+                result = inner_callback_func(result, ann, data)
 
                 result.id = ann["id"]
                 result.img_id = ann["image_id"]
@@ -187,9 +205,10 @@ class PoseMetricEvaluator(object):
         converter: str | None = None,
         anns_schema: str = "coco_wholebody",
         expected_joints: int | None = None,
-        num_samples: int | None = None
+        num_samples: int | None = None,
+        iou_thrs: list[float] | np.ndarray | None = None
     ) -> dict[str, float]:
-        self.evaluator = self._build_metric(ann_file, anns_schema, converter)
+        self.evaluator = self._build_metric(ann_file, anns_schema, converter, iou_thrs)
         self.evaluator.dataset_meta = self._resolve_meta(self.pipeline.model_cfg)
         self.coco.imgs = dict(list(self.coco.imgs.items())[: num_samples])
         self.coco.anno_file = [ann_file]
@@ -211,6 +230,7 @@ def launch_evaluation(
     save_dir: str | None = None,
     show_plot: bool = True,
     radar_xticks: list[float] | None = None,
+    iou_thrs: list[float] | np.ndarray | None = None
 ) -> dict[str, dict[str, float]]:
     exp_metrics: dict[str, dict[str, float]] = {}
     is_wholebody = False
@@ -224,7 +244,8 @@ def launch_evaluation(
             ann_file=config.ann_file,
             converter=config.converter,
             anns_schema=config.anns_schema,
-            expected_joints=config.expected_joints
+            expected_joints=config.expected_joints,
+            iou_thrs=iou_thrs,
         )
         exp_metrics[config.legend] = metrics
         is_wholebody = evaluator.is_wholebody
@@ -263,6 +284,8 @@ def _parse_args() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.joinpath("../../../tools/.env"))
     args = _parse_args()
     cfg = EvalConfig.load(args.config)
     launch_evaluation(
@@ -270,4 +293,5 @@ if __name__ == "__main__":
         save_dir=args.save_dir or cfg.save_dir,
         show_plot=(not args.no_show) and cfg.show_plot,
         radar_xticks=cfg.radar_xticks,
+        iou_thrs=cfg.iou_thrs
     )
