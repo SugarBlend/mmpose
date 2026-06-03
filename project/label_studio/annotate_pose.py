@@ -19,7 +19,7 @@ from deploy2serve.deployment.projects.sapiens.utils.adapters import visualizer_a
 
 sys.path.insert(0, Path(__file__).parents[2].as_posix())
 from project.label_studio.pipelines._mmpose import MMPose
-from project.label_studio.pipelines.sapiens import Sapiens
+from project.label_studio.pipelines.sapiens1 import Sapiens
 from ann_utils import structs
 
 

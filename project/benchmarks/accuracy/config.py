@@ -39,12 +39,13 @@ class ModelConfig:
     dataset_folder: str
     ann_file: str
     expected_joints: int
-    converter: str | None = None
+    gt_converter: str | None = None
+    pred_converter: str | None = None
     anns_schema: str = "coco_wholebody"
 
     def __post_init__(self) -> None:
         # Basic path validation (warn, not crash — paths may be on remote FS)
-        for attr in ("model_path", "config_path", "dataset_folder", "ann_file"):
+        for attr in ("config_path", "ann_file"):
             p = Path(getattr(self, attr))
             if not p.exists():
                 import warnings
@@ -102,7 +103,8 @@ class EvalConfig:
                     "ann_file": m.ann_file,
                     "anns_schema": m.anns_schema,
                     "expected_joints": m.expected_joints,
-                    "converter": m.converter,
+                    "gt_converter": m.gt_converter,
+                    "pred_converter": m.pred_converter,
                 }
                 for m in self.models
             ],

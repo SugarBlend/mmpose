@@ -1,40 +1,38 @@
 from __future__ import annotations
+import sys
+from pathlib import Path
+import torch
+
+
+sys.path.insert(0, Path(__file__).parents[3].as_posix())
+_original_torch_load = torch.load
+def _patched_torch_load(f, *args, **kwargs):
+    kwargs.setdefault("weights_only", False)
+    return _original_torch_load(f, *args, **kwargs)
+torch.load = _patched_torch_load
+
 
 import argparse
 import json
 import os
 import cv2
-import sys
-from pathlib import Path
-from typing import Any, Callable
-import mim
 import numpy as np
 from pycocotools.coco import COCO
+import mim
 from mmdeploy.codebase.mmpose.deploy.pose_detection import _get_dataset_metainfo
 from mmengine.config import Config
+from mmengine.evaluator.metric import BaseMetric
 from mmpose.structures.pose_data_sample import PoseDataSample
 from mmpose import __file__ as mmpose_root
 import torch
 from tqdm import tqdm
-
-sys.path.insert(0, Path(__file__).parents[3].as_posix())
-from project.label_studio.pipelines.pipeline import MMPipeline
+from typing import Any, Callable
 
 from config import ModelConfig, EvalConfig
-from maps import SKELETON_SUBSETS
-from mmengine.evaluator.metric import BaseMetric
+from maps import SKELETON_SUBSETS, halpe2coco_wholebody, coco2coco_wholebody
+from project.label_studio.pipelines.pipeline import MMPipeline
 from tools import logger, generate_radar_plot, save_metrics_xlsx
 
-
-_HALPE2CWB: dict[str, tuple[list[int], list[int]]] = {
-    "body": (list(range(17)), list(range(17))),
-    "foot": ([20, 22, 24, 21, 23, 25], [17, 18, 19, 20, 21, 22]),
-    "left_hand": (list(range(94, 115)), list(range(91, 112))),
-    "right_hand": (list(range(115, 136)), list(range(112, 133))),
-}
-_COCO2CWB: dict[str, tuple[list[int], list[int]]] = {
-    "body": (list(range(17)), list(range(17))),
-}
 
 SurrogateCallback = Callable[["PoseDataSample", dict[str, Any], str], "PoseDataSample"]
 
@@ -55,7 +53,8 @@ class PoseMetricEvaluator(object):
         self,
         ann_file: str,
         anns_schema: str,
-        converter: str,
+        gt_converter: str,
+        pred_converter: str,
         iou_thrs: list[float] | np.ndarray | None
     ) -> BaseMetric:
         self.coco = COCO(ann_file)
@@ -67,7 +66,7 @@ class PoseMetricEvaluator(object):
             iou_type="keypoints",
             score_mode="keypoint",
             keypoint_score_thr=0.2,
-            nms_mode="oks_nms",
+            nms_mode="none",
             nms_thr=0.9,
             format_only=False,
             use_area=True,
@@ -80,13 +79,21 @@ class PoseMetricEvaluator(object):
             from patches import CocoMetric as Metric
             import maps
 
-            mapping = getattr(maps, converter)
-            converter = dict(
-                type="KeypointConverter",
-                num_keypoints=num_joints,
-                mapping=mapping,
-            )
-            params.update(dict(gt_converter=converter))
+            if gt_converter is not None:
+                converter = dict(
+                    type="KeypointConverter",
+                    num_keypoints=num_joints,
+                    mapping=getattr(maps, gt_converter),
+                )
+                params.update(dict(gt_converter=converter))
+
+            if pred_converter is not None:
+                converter = dict(
+                    type="KeypointConverter",
+                    num_keypoints=num_joints,
+                    mapping=getattr(maps, pred_converter),
+                )
+                params.update(dict(pred_converter=converter))
 
         return Metric(**params)
 
@@ -132,7 +139,7 @@ class PoseMetricEvaluator(object):
 
         halpe_inst = self.pipeline(data, [ann["bbox"]])[0].pred_instances
 
-        for key, values in _HALPE2CWB.items():
+        for key, values in halpe2coco_wholebody.items():
             src_ids, dst_ids = values
             if max(src_ids) > halpe_inst.keypoints.shape[1]:
                 # case when using halpe26 instead of halpe136
@@ -188,7 +195,7 @@ class PoseMetricEvaluator(object):
                 data = os.path.join(dataset_folder, img_info["file_name"])
 
             for ann in self.coco.imgToAnns.get(img_id, []):
-                batch_results_body = pipeline(data, [ann["bbox"]])
+                batch_results_body = pipeline(data, [ann["bbox"]]) # bboxes in xywh format
                 result = batch_results_body[0]
 
                 result = inner_callback_func(result, ann, data)
@@ -202,14 +209,29 @@ class PoseMetricEvaluator(object):
         self,
         dataset_folder: str,
         ann_file: str,
-        converter: str | None = None,
+        gt_converter: str | None = None,
+        pred_converter: str | None = None,
         anns_schema: str = "coco_wholebody",
         expected_joints: int | None = None,
         num_samples: int | None = None,
         iou_thrs: list[float] | np.ndarray | None = None
     ) -> dict[str, float]:
-        self.evaluator = self._build_metric(ann_file, anns_schema, converter, iou_thrs)
-        self.evaluator.dataset_meta = self._resolve_meta(self.pipeline.model_cfg)
+        self.evaluator = self._build_metric(ann_file, anns_schema, gt_converter, pred_converter, iou_thrs)
+
+        if isinstance(self.pipeline, MMPipeline):
+            dataset_meta = self._resolve_meta(self.pipeline.model_cfg)
+        else:
+            # TODO: Now this is bad hardcode to halpe sigmas
+            target_meta = Config.fromfile(
+                f"{os.path.dirname(mmpose_root)}/.mim/configs/_base_/datasets/halpe.py"
+            )
+            sigmas = np.array(target_meta.dataset_info.sigmas)
+            dataset_meta = {
+                "sigmas": sigmas,
+                "num_keypoints": len(sigmas),
+            }
+
+        self.evaluator.dataset_meta = dataset_meta
         self.coco.imgs = dict(list(self.coco.imgs.items())[: num_samples])
         self.coco.anno_file = [ann_file]
         self.evaluator.coco = self.coco
@@ -237,12 +259,19 @@ def launch_evaluation(
 
     for config in model_configs:
         logger.info(f"Evaluating: {config.legend}")
-        pipeline = MMPipeline(config.model_path, config.config_path)
+
+        if "sapiens2" in config.config_path:
+            from project.label_studio.pipelines.sapiens2 import Sapiens2
+            pipeline = Sapiens2(config.model_path, config.config_path)
+        else:
+            pipeline = MMPipeline(config.model_path, config.config_path)
+
         evaluator = PoseMetricEvaluator(pipeline)
         metrics = evaluator.evaluate(
             dataset_folder=config.dataset_folder,
             ann_file=config.ann_file,
-            converter=config.converter,
+            gt_converter=config.gt_converter,
+            pred_converter=config.pred_converter,
             anns_schema=config.anns_schema,
             expected_joints=config.expected_joints,
             iou_thrs=iou_thrs,
@@ -277,8 +306,8 @@ def launch_evaluation(
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Pose model evaluation — mAP / mAR with flexible keypoint subsets")
-    parser.add_argument("--config", "-c", default="./eval-config.yaml", type=str, help="Path to eval-config.yaml")
-    parser.add_argument("--save-dir", "-o", type=str, default=None, help="Directory to save metrics.json, metrics.xlsx and radar.png")
+    parser.add_argument("--config", "-c", type=str, help="Path to eval-config.yaml")
+    parser.add_argument("--save-dir", "-o", type=str, help="Directory to save metrics.json, metrics.xlsx and radar.png")
     parser.add_argument("--no-show", action="store_true", help="Do not display the radar plot interactively")
     return parser.parse_args()
 

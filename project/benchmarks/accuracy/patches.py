@@ -78,8 +78,6 @@ class CocoMetric(CocoMetricBase):
         coco_eval.params.useSegm = None
         coco_eval.params.iouThrs = self.iou_thrs
 
-        print(self.iou_thrs)
-
         coco_eval.evaluate()
         coco_eval.accumulate()
         coco_eval.summarize()

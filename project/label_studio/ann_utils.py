@@ -87,7 +87,7 @@ CATEGORY_COCO133 = KeypointCategory(
 )
 
 CATEGORY_GOLIATH308 = KeypointCategory(
-    num_keypoints=344,
+    num_keypoints=308,
     keypoints=GOLIATH_CLASSES,
     name="person",
     kpt_colors=GOLIATH_KPTS_COLORS,
@@ -102,5 +102,5 @@ structs = {
     21: CATEGORY_HAND21,
     26: CATEGORY_HALPE26,
     133: CATEGORY_COCO133,
-    344: CATEGORY_GOLIATH308
+    308: CATEGORY_GOLIATH308
 }
