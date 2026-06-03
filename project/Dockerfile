@@ -5,15 +5,15 @@ ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /workspace
 
 RUN apt-get update && apt-get install -y \
-    python3.10 \
-    python3.10-venv \
-    python3-pip \
+#    python3.12 \
+#    python3.12-venv \
+#    python3-pip \
     git \
     curl \
     build-essential \
     pkg-config \
     libcairo2-dev \
-    python3-dev \
+#    python3-dev \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
@@ -23,7 +23,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     UV_CACHE_DIR=/.cache/uv \
-    UV_PYTHON=python3.10 \
+    UV_PYTHON=python3.12 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     CUDA_HOME=/usr/local/cuda
