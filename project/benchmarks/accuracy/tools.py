@@ -136,6 +136,21 @@ def _draw_radar(ax, labels, datasets, xticks, colors):
         ax.plot(angles, vals, linewidth=1.8, linestyle="solid", label=name, color=color)
         ax.fill(angles, vals, color=color, alpha=0.12)
 
+        # # value labels on points
+        # for angle, val in zip(angles[:-1], values):
+        #     if val <= 0:
+        #         continue
+        #     ax.annotate(
+        #         f"{val:.2f}",
+        #         xy=(angle, val),
+        #         xytext=(angle, val + (xticks[-1] - xticks[0]) * 0.04),
+        #         ha="center",
+        #         va="center",
+        #         fontsize=5,
+        #         color=color,
+        #         fontweight="bold",
+        #     )
+
 
 def _auto_xticks(values_flat: list[float], n_steps: int = 5) -> list[float]:
     if not values_flat:

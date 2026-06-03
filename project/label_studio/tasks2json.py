@@ -44,17 +44,15 @@ class LSConverter(object):
         joints_number = len(self.label_values)
 
         for idx, task in enumerate(tasks):
-            # TODO: bad practice to using default bucket hardcore..
-            image_name = Path(unquote(task["data"]["image"])).relative_to("s3://datasets").as_posix()
+            image_name = Path(unquote(task["data"]["image"])).relative_to(args.root_dataset_path).as_posix()
             image_id = task["id"]
 
             if not task.get("annotations"):
                 logger.warning(f"No annotations for project: '{project_name}', task {idx}, '{task['data']['image']}'")
                 continue
 
-            joints_tensor = np.zeros((joints_number, 3))
-
             for annotation in task["annotations"]:
+                joints_tensor = np.zeros((joints_number, 3))
                 results = annotation["result"]
                 results.sort(key=lambda x: 0 if x["type"] == "keypointlabels" else 1)
 
@@ -74,9 +72,11 @@ class LSConverter(object):
                     if width is None or height is None:
                         width = label.get("original_width")
                         height = label.get("original_height")
+
                         if width is None or height is None:
                             logger.warning(f"Width/height missing for {image_name}")
                             continue
+
                         images.append({
                             "id": image_id,
                             "file_name": image_name,
@@ -208,6 +208,8 @@ class LSConverter(object):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Convert Label Studio projects to COCO via snapshot export")
+    parser.add_argument("--root-dataset-path", default="s3://datasets",
+                        help="The base path relative to which paths to the data described in the annotation are constructed.")
     parser.add_argument("--config", default="configs/config-halpe.xml", help="Label Studio config XML")
     parser.add_argument("--output_folder", default="../annotations/labelstudio", help="Folder to save COCO JSONs")
     args = parser.parse_args()

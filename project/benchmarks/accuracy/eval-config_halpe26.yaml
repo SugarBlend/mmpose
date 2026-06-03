@@ -1,0 +1,70 @@
+models:
+  - legend: "RTMPose-halpe-X (halpe26 ann)"
+    model_path: "E:/Projects/mmpose/project/checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"
+    config_path: "E:/Projects/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py"
+    dataset_folder: "D:/Datasets/val2017/val2017"
+    ann_file: "E:/Projects/mmpose/project/annotations/standard/halpe_val_v1.json"
+    anns_schema: "halpe26"
+    expected_joints: 26
+    gt_converter: "halpe_halpe26"
+    pred_converter: null
+
+  - legend: "ViTPose-simple-halpe-base FT (halpe 26 ann)"
+    model_path: "E:/ViTrackerStaff/models/pose_estimation/mmpose/PyTorch/ViTPose-base-simple-halpe26_8xb64-100e_coco-256x192_20260331.pth"
+    config_path: "E:/Projects/ViTracker/core/pose_estimation/MMPose/configs/ViTPose-base-simple-halpe26_8xb64-100e_coco-256x192.yaml"
+    dataset_folder: "D:/Datasets/val2017/val2017"
+    ann_file: "E:/Projects/mmpose/project/annotations/standard/halpe_val_v1.json"
+#    dataset_folder: "D:/"
+#    ann_file: "E:/Projects/mmpose/project/annotations/split/val.json"
+    anns_schema: "halpe26"
+    expected_joints: 26
+    gt_converter: "halpe_halpe26"
+    pred_converter: null
+
+  - legend: "Sapiens2-0.4b (halpe 26 ann)"
+    model_path: ""
+    config_path: "E:/Projects/mmpose/.venv/Lib/site-packages/sapiens/pose/configs/keypoints308/shutterstock_goliath_3po/sapiens2_0.4b_keypoints308_shutterstock_goliath_3po-1024x768.py"
+    dataset_folder: "D:/Datasets/val2017/val2017"
+    ann_file: "E:/Projects/mmpose/project/annotations/standard/halpe_val_v1.json"
+#    dataset_folder: "D:/"
+#    ann_file: "E:/Projects/mmpose/project/annotations/split/val.json"
+    anns_schema: "halpe26"
+    expected_joints: 308
+    gt_converter: "halpe_halpe26"
+    pred_converter: "goliath308_halpe26"
+
+  - legend: "Sapiens2-0.8b (halpe 26 ann)"
+    model_path: ""
+    config_path: "E:/Projects/mmpose/.venv/Lib/site-packages/sapiens/pose/configs/keypoints308/shutterstock_goliath_3po/sapiens2_0.8b_keypoints308_shutterstock_goliath_3po-1024x768.py"
+    dataset_folder: "D:/Datasets/val2017/val2017"
+    ann_file: "E:/Projects/mmpose/project/annotations/standard/halpe_val_v1.json"
+#    dataset_folder: "D:/"
+#    ann_file: "E:/Projects/mmpose/project/annotations/split/val.json"
+    anns_schema: "halpe26"
+    expected_joints: 308
+    gt_converter: "halpe_halpe26"
+    pred_converter: "goliath308_halpe26"
+
+  - legend: "Sapiens2-1b (halpe 26 ann)"
+    model_path: ""
+    config_path: "E:/Projects/mmpose/.venv/Lib/site-packages/sapiens/pose/configs/keypoints308/shutterstock_goliath_3po/sapiens2_1b_keypoints308_shutterstock_goliath_3po-1024x768.py"
+    dataset_folder: "D:/Datasets/val2017/val2017"
+    ann_file: "E:/Projects/mmpose/project/annotations/standard/halpe_val_v1.json"
+#    dataset_folder: "D:/"
+#    ann_file: "E:/Projects/mmpose/project/annotations/split/val.json"
+    anns_schema: "halpe26"
+    expected_joints: 308
+    gt_converter: "halpe_halpe26"
+    pred_converter: "goliath308_halpe26"
+
+# Radar plot Y-axis ticks (values between 0 and 1)
+#radar_xticks: [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+radar_xticks: null
+
+# Where to save outputs (null = do not save)
+save_dir: "./results"
+
+# Show interactive plot window after evaluation
+show_plot: true
+
+#iou_thrs: [0.925, 0.95, 0.975, 1.0]

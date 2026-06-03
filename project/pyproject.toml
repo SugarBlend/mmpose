@@ -1,7 +1,7 @@
 [project]
 name = "PoseTrainer"
 version = "0.1.0"
-requires-python = "==3.10.*"
+requires-python = "==3.12.*"
 
 dependencies = [
     "setuptools",
@@ -9,9 +9,7 @@ dependencies = [
     "ultralytics==8.3.206",
     "opencv-python~=4.9.0.80",
     "nuitka",
-    "torch==2.1.2",
-    "torchvision==0.16.2",
-    "torchaudio==2.1.2",
+    "torch==2.8.*",
     "kornia",
     "onnx==1.16.0",
     "onnxruntime-gpu==1.20.1",
@@ -19,7 +17,8 @@ dependencies = [
     "tensorrt==10.9.0.34",
     "dvc==3.67.1",
     "dvc-s3==3.3.0",
-    "tenacity"
+    "tenacity",
+    "openpyxl",
 ]
 
 [dependency-groups]
@@ -38,29 +37,29 @@ labeling = [
 ]
 mmlab = [
     "albumentations==1.3.1",
+    "sapiens @ git+https://github.com/facebookresearch/sapiens2.git",
     "chumpy @ git+https://github.com/mattloper/chumpy.git@4228d703b622e172e843438fe0fada102979361a",
-    "mmcv @ https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/mmcv-2.1.0-cp310-cp310-win_amd64.whl; python_version == '3.10' and sys_platform == 'win32'",
-    "mmcv @ https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/mmcv-2.1.0-cp310-cp310-manylinux1_x86_64.whl; python_version == '3.10' and sys_platform == 'linux'",
     "mmpretrain==1.2.0",
     "mmdeploy==1.3.1",
     "mmdet>=3.0.0,<3.3.0",
+    "openmim"
 ]
 
 [tool.uv]
 index-url = "https://pypi.org/simple"
 
 [[tool.uv.index]]
-name = "pytorch-cu121"
-url = "https://download.pytorch.org/whl/cu121"
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
 explicit = true
 
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cu121"},
+  { index = "pytorch-cu128"},
 ]
 torchvision = [
-  { index = "pytorch-cu121"},
+  { index = "pytorch-cu128"},
 ]
 torchaudio = [
-  { index = "pytorch-cu121"},
+  { index = "pytorch-cu128"},
 ]
