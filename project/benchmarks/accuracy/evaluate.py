@@ -1,16 +1,8 @@
 from __future__ import annotations
 import sys
 from pathlib import Path
-import torch
-
 
 sys.path.insert(0, Path(__file__).parents[3].as_posix())
-_original_torch_load = torch.load
-def _patched_torch_load(f, *args, **kwargs):
-    kwargs.setdefault("weights_only", False)
-    return _original_torch_load(f, *args, **kwargs)
-torch.load = _patched_torch_load
-
 
 import argparse
 import json
@@ -27,6 +19,7 @@ from mmpose import __file__ as mmpose_root
 import torch
 from tqdm import tqdm
 from typing import Any, Callable
+from urllib.parse import urlparse
 
 from config import ModelConfig, EvalConfig
 from maps import SKELETON_SUBSETS, halpe2coco_wholebody, coco2coco_wholebody
@@ -188,7 +181,9 @@ class PoseMetricEvaluator(object):
             img_info = self.coco.loadImgs(img_id)[0]
 
             if dataset_folder.startswith("minio://"):
-                bytes_data = client.get(img_info["file_name"])
+                parsed = urlparse(dataset_folder)
+                path = parsed.path.lstrip("/")
+                bytes_data = client.get(f"{path}/{img_info['file_name']}")
                 arr = np.frombuffer(bytes_data, dtype=np.uint8)
                 data = cv2.imdecode(arr, cv2.IMREAD_COLOR)
             else:
