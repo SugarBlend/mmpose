@@ -356,7 +356,10 @@ class CocoMetric(BaseMetric):
         coco_json = dict(
             info=info,
             images=image_infos,
-            categories=self.dataset_meta['CLASSES'],
+            categories=[{
+              "id": 1,
+              "name": "person"
+            }],
             licenses=None,
             annotations=annotations,
         )
