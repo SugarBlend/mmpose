@@ -1,3 +1,4 @@
+import argparse
 import os
 import json
 import logging
@@ -10,68 +11,82 @@ import time
 from typing import Any
 from urllib.parse import unquote
 from dotenv import load_dotenv
+from collections import defaultdict
+import re
+
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+logging.basicConfig(level=getattr(logging, os.getenv("LOG_LEVEL", default="INFO")), format="[%(levelname)s] %(message)s")
 
 
 class LSConverter(object):
-    def __init__(self, config_path: str) -> None:
-        load_dotenv()
-        self.client = LabelStudio(base_url=os.getenv("LABEL_STUDIO_URL"), api_key=os.getenv("LABEL_STUDIO_API_KEY"))
-        self.label_values = self._parse_labels(config_path)
-
-        # Joints mapping from ls .xml file
-        self.categories = [{"id": i + 1, "name": name} for i, name in enumerate(self.label_values)]
-        self.category_name_to_id = {cat["name"]: cat["id"] for cat in self.categories}
-
-        # Add 'person' category with equal for bounding box
-        self.categories.append({"id": 0, "name": "person"})
-        self.category_name_to_id["person"] = 0
+    def __init__(self, url: str | None = None, api_key: str | None = None) -> None:
+        self.client = LabelStudio(
+            base_url=url or os.getenv("LABEL_STUDIO_URL"),
+            api_key=api_key or os.getenv("LABEL_STUDIO_API_KEY")
+        )
+        self.label_values: None | list[str] = None # represent ordered names of keypoints
 
     @staticmethod
-    def _parse_labels(config_path: str) -> list[str]:
-        root = ET.parse(config_path).getroot()
+    def _parse_labels(config_path: str) -> list[str | None]:
+        root = ET.fromstring(config_path)
         return [label.get("value") for label in root.findall(".//KeyPointLabels/Label")]
 
     def tasks2json(self, tasks, project_name, output_dir="outputs"):
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-        labels_file = output_dir.joinpath(f"{project_name}.json")
 
+        labels_file = output_dir.joinpath(f"{project_name}.json")
         images: list[dict[str, int | str]] = []
         annotations: list[dict[str, Any]] = []
+
+        assert self.label_values is not None, "Skipped step for parsing label config from 'project.label_config'."
         joints_number = len(self.label_values)
+        label_order = {name: i for i, name in enumerate(self.label_values)}
 
         for idx, task in enumerate(tasks):
             image_name = Path(unquote(task["data"]["image"])).relative_to(args.root_dataset_path).as_posix()
             image_id = task["id"]
 
             if not task.get("annotations"):
-                logger.warning(f"No annotations for project: '{project_name}', task {idx}, '{task['data']['image']}'")
+                logger.debug(f"No annotations for project: '{project_name}', task {idx}, '{task['data']['image']}'")
                 continue
 
             for annotation in task["annotations"]:
-                joints_tensor = np.zeros((joints_number, 3))
                 results = annotation["result"]
-                results.sort(key=lambda x: 0 if x["type"] == "keypointlabels" else 1)
 
-                width, height = None, None
+                boxes = {}
+                keypoints_by_parent = defaultdict(list)
+                polygons = []
 
+                # Sorting each bounding boxes and search them children by using parentID conection
                 for label in results:
+                    if label["type"] in ("rectanglelabels", "labels"):
+                        boxes[label["id"]] = label
+                    elif label["type"] == "keypointlabels":
+                        parent_id = label.get("parentID")
+                        if not parent_id:
+                            logger.warning(f"Keypoint without parentID for {image_name}, annotation will be skipped")
+                            continue
+                        keypoints_by_parent[parent_id].append(label)
+                    elif label["type"] == "polygonlabels":
+                        polygons.append(label)
+
+                width = height = None
+
+                for box_id, box_label in boxes.items():
                     category_name = None
-                    for key in ["rectanglelabels", "polygonlabels", "labels", "keypointlabels"]:
-                        if key == label["type"] and len(label["value"].get(key, [])) > 0:
-                            category_name = label['value'][key][0]
-                            break
+                    key = box_label["type"]
+                    if len(box_label["value"].get(key, [])) > 0:
+                        category_name = box_label["value"][key][0]
 
                     if category_name is None:
                         logger.warning(f"Unknown label or empty for image {image_name}")
                         continue
 
                     if width is None or height is None:
-                        width = label.get("original_width")
-                        height = label.get("original_height")
+                        width = box_label.get("original_width")
+                        height = box_label.get("original_height")
 
                         if width is None or height is None:
                             logger.warning(f"Width/height missing for {image_name}")
@@ -84,27 +99,34 @@ class LSConverter(object):
                             "height": height
                         })
 
-                    if label["type"] in ["rectanglelabels", "labels"]:
-                        self.process_rectangle(label, annotations)
-                    elif label["type"] == "polygonlabels":
-                        self.process_polygon(label, annotations)
-                    elif label["type"] == "keypointlabels":
+                    self.process_rectangle(box_label, annotations)
+
+                    joints_tensor = np.zeros((joints_number, 3))
+
+                    for kp_label in keypoints_by_parent.get(box_id, []):
+                        kp_values = kp_label["value"].get("keypointlabels", [])
+
+                        if not kp_values:
+                            continue
+
+                        name = kp_values[0]
+                        if name not in label_order:
+                            logger.warning(f"Unknown keypoint label '{name}' for image {image_name}")
+                            continue
+
+                        ind = label_order[name] + 1
+
                         try:
-                            self.process_keypoints(
-                                label, joints_tensor, annotations, image_id, self.category_name_to_id[category_name]
-                            )
+                            self.process_keypoints(kp_label, joints_tensor, annotations, image_id, ind)
                         except KeyError as error:
-                            # Case when anns schema from xml doesn't correspondence with labels from LS
                             logger.warning(error)
+
+                for label in polygons:
+                    self.process_polygon(label, annotations)
 
         description = {
             "images": images,
-            "categories": [
-                {
-                  "id": 1,
-                  "name": "person"
-                }
-              ],
+            "categories": [{"id": 1, "name": "person"}],
             "annotations": annotations,
             "info": {
                 "year": datetime.now().year,
@@ -114,7 +136,6 @@ class LSConverter(object):
                 "date_created": str(datetime.now())
             }
         }
-
         labels_file.write_text(json.dumps(description, indent=2), encoding="utf-8")
         logger.info(f"Annotation json saved by: {labels_file}")
         return labels_file
@@ -125,7 +146,7 @@ class LSConverter(object):
         w = value["width"] * label["original_width"] / 100
         h = value["height"] * label["original_height"] / 100
 
-        annotations[-1].update({
+        annotations.append({
             "bbox": [
                 value["x"] * label["original_width"] / 100,
                 value["y"] * label["original_height"] / 100,
@@ -135,6 +156,7 @@ class LSConverter(object):
             "category_id": 1
         })
 
+    #FIXME: Not tested, at now optional
     @staticmethod
     def process_polygon(label: dict[str, Any], annotations: list[dict[str, Any]]) -> None:
         width = label["original_width"]
@@ -164,16 +186,15 @@ class LSConverter(object):
         y = value["y"] * label["original_height"] / 100
         joints_tensor[category_id - 1] = [x, y, 2]
 
-        if not annotations or annotations[-1]["image_id"] != image_id:
-            annotation = {
+        if annotations[-1].get("num_keypoints") is None:
+            annotations[-1].update({
                 "id": len(annotations),
                 "image_id": image_id,
                 "keypoints": joints_tensor.flatten().tolist(),
                 "iscrowd": 0,
                 "ignore": 0,
                 "num_keypoints": 1
-            }
-            annotations.append(annotation)
+            })
         else:
             annotations[-1]["keypoints"] = joints_tensor.flatten().tolist()
             annotations[-1]["num_keypoints"] += 1
@@ -199,20 +220,34 @@ class LSConverter(object):
         return tasks_json
 
     def process_annotations(self, output_dir: str = "outputs") -> None:
+        compiler = re.compile(args.name_pattern)
         for project in self.client.projects.list().items:
-            logger.info(f"Processing project: {project.title} (id={project.id})")
-            tasks = self._export_project_annotations(project.id)
-            self.tasks2json(tasks, project.title, output_dir)
+            if compiler.search(project.title):
+                if not project.total_annotations_number:
+                    logger.warning(f"Skip empty project: '{project.title}', doesn't detect any annotations.")
+                    continue
+
+                logger.info(f"Processing project: {project.title} (id={project.id})")
+                # Fetch label config directly from project settings
+                self.label_values = self._parse_labels(project.label_config)
+                tasks = self._export_project_annotations(project.id)
+                self.tasks2json(tasks, project.title, output_dir)
 
 
 if __name__ == "__main__":
-    import argparse
     parser = argparse.ArgumentParser(description="Convert Label Studio projects to COCO via snapshot export")
     parser.add_argument("--root-dataset-path", default="s3://datasets",
                         help="The base path relative to which paths to the data described in the annotation are constructed.")
-    parser.add_argument("--config", default="configs/config-halpe.xml", help="Label Studio config XML")
-    parser.add_argument("--output_folder", default="../annotations/labelstudio", help="Folder to save COCO JSONs")
+    parser.add_argument("--output_folder", default="../annotations/labelstudio",
+                        help="Folder to save COCO JSONs")
+    # parser.add_argument("--name_pattern", default=".*",
+    #                     help="Regular expression for filtering project by them name.")
+    # parser.add_argument("--name_pattern", default="^Pose Annotation",
+    #                     help="Regular expression for filtering project by them name.")
+    parser.add_argument("--name_pattern", default=r"Hands\s\+\sBody Pose Annotation",
+                        help="Regular expression for filtering project by them name.")
     args = parser.parse_args()
 
-    converter = LSConverter(args.config)
+    load_dotenv()
+    converter = LSConverter()
     converter.process_annotations(output_dir=args.output_folder)

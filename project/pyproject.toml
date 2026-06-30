@@ -19,6 +19,7 @@ dependencies = [
     "dvc-s3==3.3.0",
     "tenacity",
     "openpyxl",
+    "scipy==1.15.*"
 ]
 
 [dependency-groups]
@@ -26,7 +27,7 @@ graphics = [
     "pycairo",
 ]
 ray = [
-    "ray[tune]",
+    "ray[tune]==2.55.*",
     "ray[default]",
     "optuna",
 ]
