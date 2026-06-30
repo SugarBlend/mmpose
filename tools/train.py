@@ -16,9 +16,10 @@ from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description='Train a pose model')
     parser.add_argument('--config', default="configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py", help='train config file path')
+    # parser.add_argument('--config', default="configs/body_2d_keypoint/topdown_heatmap/coco/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192.py", help='train config file path')
     parser.add_argument('--work-dir',
                         default=f"Exps/{time.strftime('%Y-%m-%d %H_%M_%S', time.localtime())}",
                         help='the dir to save logs and models')
@@ -64,6 +65,8 @@ def parse_args():
     parser.add_argument(
         '--cfg-options',
         nargs='+',
+        default={"load_from": "/ssd/auto_ml_backend/models/mmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"},
+        # default={"load_from": "/ssd/auto_ml_backend/models/mmpose/td-hm_ViTPose-base-simple_8xb64-210e_coco-256x192-0b8234ea_20230407.pth"},
         action=DictAction,
         help='override some settings in the used config, the key-value pair '
         'in xxx=yyy format will be merged into config file. If the value to '
@@ -80,7 +83,7 @@ def parse_args():
     # will pass the `--local-rank` parameter to `tools/train.py` instead
     # of `--local_rank`.
     parser.add_argument('--local_rank', '--local-rank', type=int, default=0)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
 
@@ -148,9 +151,7 @@ def merge_args(cfg, args):
     return cfg
 
 
-def main():
-    args = parse_args()
-
+def main(args):
     # load config
     cfg = Config.fromfile(args.config)
 
@@ -171,4 +172,5 @@ def main():
 
 if __name__ == '__main__':
     os.chdir(Path(__file__).parent.parent.as_posix())
-    main()
+    args = parse_args()
+    main(args)
