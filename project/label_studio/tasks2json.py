@@ -44,6 +44,8 @@ class LSConverter(object):
         joints_number = len(self.label_values)
         label_order = {name: i for i, name in enumerate(self.label_values)}
 
+        seen_image_ids: set[int] = set()
+
         for idx, task in enumerate(tasks):
             image_name = Path(unquote(task["data"]["image"])).relative_to(args.root_dataset_path).as_posix()
             image_id = task["id"]
@@ -53,13 +55,17 @@ class LSConverter(object):
                 continue
 
             for annotation in task["annotations"]:
+                if annotation.get("was_cancelled"):
+                    logger.debug(f"Skipping cancelled annotation for task {idx}, '{image_name}'")
+                    continue
+
                 results = annotation["result"]
 
                 boxes = {}
                 keypoints_by_parent = defaultdict(list)
                 polygons = []
 
-                # Sorting each bounding boxes and search them children by using parentID conection
+                # Sorting each bounding boxes and search them children by using parentID connection
                 for label in results:
                     if label["type"] in ("rectanglelabels", "labels"):
                         boxes[label["id"]] = label
@@ -72,8 +78,6 @@ class LSConverter(object):
                     elif label["type"] == "polygonlabels":
                         polygons.append(label)
 
-                width = height = None
-
                 for box_id, box_label in boxes.items():
                     category_name = None
                     key = box_label["type"]
@@ -84,22 +88,22 @@ class LSConverter(object):
                         logger.warning(f"Unknown label or empty for image {image_name}")
                         continue
 
+                    width = box_label.get("original_width")
+                    height = box_label.get("original_height")
                     if width is None or height is None:
-                        width = box_label.get("original_width")
-                        height = box_label.get("original_height")
+                        logger.warning(f"Width/height missing for {image_name}")
+                        continue
 
-                        if width is None or height is None:
-                            logger.warning(f"Width/height missing for {image_name}")
-                            continue
-
+                    if image_id not in seen_image_ids:
                         images.append({
                             "id": image_id,
                             "file_name": image_name,
                             "width": width,
                             "height": height
                         })
+                        seen_image_ids.add(image_id)
 
-                    self.process_rectangle(box_label, annotations)
+                    self.process_rectangle(box_label, annotations, image_id, joints_number)
 
                     joints_tensor = np.zeros((joints_number, 3))
 
@@ -117,7 +121,7 @@ class LSConverter(object):
                         ind = label_order[name] + 1
 
                         try:
-                            self.process_keypoints(kp_label, joints_tensor, annotations, image_id, ind)
+                            self.process_keypoints(kp_label, joints_tensor, annotations, ind)
                         except KeyError as error:
                             logger.warning(error)
 
@@ -141,20 +145,42 @@ class LSConverter(object):
         return labels_file
 
     @staticmethod
-    def process_rectangle(label: dict[str, Any], annotations: list[dict[str, Any]]) -> None:
+    def process_rectangle(label: dict[str, Any], annotations: list[dict[str, Any]], image_id: int,
+                          joints_number: int) -> None:
         value = label["value"]
         w = value["width"] * label["original_width"] / 100
         h = value["height"] * label["original_height"] / 100
 
         annotations.append({
+            "id": len(annotations),
+            "image_id": image_id,
             "bbox": [
                 value["x"] * label["original_width"] / 100,
                 value["y"] * label["original_height"] / 100,
                 w, h
             ],
             "area": w * h,
-            "category_id": 1
+            "category_id": 1,
+            "iscrowd": 0,
+            "ignore": 0,
+            "num_keypoints": 0,
+            "keypoints": [0] * (joints_number * 3),
         })
+
+    @staticmethod
+    def process_keypoints(
+        label: dict[str, Any],
+        joints_tensor: np.ndarray,
+        annotations: list[dict[str, Any]],
+        category_id: int
+    ) -> None:
+        value = label["value"]
+        x = value["x"] * label["original_width"] / 100
+        y = value["y"] * label["original_height"] / 100
+        joints_tensor[category_id - 1] = [x, y, 2]
+
+        annotations[-1]["keypoints"] = joints_tensor.flatten().tolist()
+        annotations[-1]["num_keypoints"] += 1
 
     #FIXME: Not tested, at now optional
     @staticmethod
@@ -172,32 +198,6 @@ class LSConverter(object):
             "area": area,
             "segmentation": [[coord for point in points_abs for coord in point]]
         })
-
-    @staticmethod
-    def process_keypoints(
-        label: dict[str, Any],
-        joints_tensor: np.ndarray,
-        annotations: list[dict[str, Any]],
-        image_id: int,
-        category_id: int
-    ) -> None:
-        value = label["value"]
-        x = value["x"] * label["original_width"] / 100
-        y = value["y"] * label["original_height"] / 100
-        joints_tensor[category_id - 1] = [x, y, 2]
-
-        if annotations[-1].get("num_keypoints") is None:
-            annotations[-1].update({
-                "id": len(annotations),
-                "image_id": image_id,
-                "keypoints": joints_tensor.flatten().tolist(),
-                "iscrowd": 0,
-                "ignore": 0,
-                "num_keypoints": 1
-            })
-        else:
-            annotations[-1]["keypoints"] = joints_tensor.flatten().tolist()
-            annotations[-1]["num_keypoints"] += 1
 
     def _export_project_annotations(self, project_id: int) -> list[dict[str, Any]]:
         export_job = self.client.projects.exports.create(id=project_id, title=f"Export_{project_id}")
@@ -242,10 +242,10 @@ if __name__ == "__main__":
                         help="Folder to save COCO JSONs")
     # parser.add_argument("--name_pattern", default=".*",
     #                     help="Regular expression for filtering project by them name.")
-    # parser.add_argument("--name_pattern", default="^Pose Annotation",
-    #                     help="Regular expression for filtering project by them name.")
-    parser.add_argument("--name_pattern", default=r"Hands\s\+\sBody Pose Annotation",
+    parser.add_argument("--name_pattern", default="^Pose Annotation",
                         help="Regular expression for filtering project by them name.")
+    # parser.add_argument("--name_pattern", default=r"Hands\s\+\sBody Pose Annotation",
+    #                     help="Regular expression for filtering project by them name.")
     args = parser.parse_args()
 
     load_dotenv()
