@@ -1,5 +1,6 @@
 import argparse
 import boto3
+import dotenv
 import os
 from pathlib import Path
 from botocore.client import Config
@@ -65,10 +66,10 @@ def download_annotations(
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Data fetcher from any s3 object storage service")
-    parser.add_argument("--access_key", "-c", type=str, required=True, help="Access key for S3 object storage.")
-    parser.add_argument("--secret_key", "-o", type=str, required=True, help="Secret key for S3 object storage.")
+    parser.add_argument("--access_key", "-c", type=str, default=os.getenv("AWS_ACCESS_KEY_ID"), help="Access key for S3 object storage.")
+    parser.add_argument("--secret_key", "-o", type=str, default=os.getenv("AWS_SECRET_ACCESS_KEY"), help="Secret key for S3 object storage.")
     parser.add_argument("--bucket_name", type=str, required=True, help="Bucket name for S3 object storage.")
-    parser.add_argument("--endpoint_url", type=str, required=True, help="Service address: <host>:<port>")
+    parser.add_argument("--endpoint_url", type=str, default=os.getenv("AWS_ENDPOINT_URL"), help="Service address: <host>:<port>")
     parser.add_argument("--prefix", type=str, required=True, help="Path relative to bucket_name for data")
     parser.add_argument("--local_dir", type=str, default="./", help="Path to local directory for storing "
                                                                     "downloaded data")
@@ -76,6 +77,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
+    dotenv.load_dotenv(f'tools/.env')
     args = _parse_args()
     download_annotations(
         endpoint_url=args.endpoint_url,

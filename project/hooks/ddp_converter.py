@@ -10,6 +10,7 @@ import boto3
 from botocore.client import Config
 from dotenv import load_dotenv
 from urllib.parse import urlparse
+from tqdm import tqdm
 
 
 logger = logging.getLogger(__name__)
@@ -27,8 +28,8 @@ _ddp_mod.DistributedDataParallel.__setstate__ = _ddp_patched_setstate
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--source", default="minio://mlflow-artifacts/6/fce433ded8ff4012bc96e5f6a7a36214/artifacts/checkpoints/epoch_031/data/model.pth", help="Path to the weights that were obtained during distributed learning.")
-    parser.add_argument("-d", "--destination", default="./", help="Save path on local disk.")
+    parser.add_argument("-s", "--source", default="s3://mlflow-artifacts/6/7ae7dc422987469e97713e1dcbca67a0/artifacts/checkpoints/epoch_043/data/model.pth", help="Path to the weights that were obtained during distributed learning.")
+    parser.add_argument("-d", "--destination", default=r"E:/Projects/mmpose/experiments_/omniscient-kit-73", help="Save path on local disk.")
     return parser.parse_args()
 
 
@@ -50,8 +51,22 @@ if __name__ == "__main__":
         )
         logger.info(f"Try to fetch file from S3 object storage, endpoint url: {os.environ['AWS_ENDPOINT_URL']}")
         response = client.get_object(Bucket=bucket, Key=path)
-        data = response["Body"].read()
-        f = io.BytesIO(data)
+
+        total_size = response["ContentLength"]
+        body = response["Body"]
+
+        buffer = io.BytesIO()
+
+        with tqdm(total=total_size, unit="B", unit_scale=True, desc="Downloading") as pbar:
+            while True:
+                chunk = body.read(1024 * 1024) # 1 MB
+                if not chunk:
+                    break
+                buffer.write(chunk)
+                pbar.update(len(chunk))
+
+        buffer.seek(0)
+        f = buffer
     elif os.path.exists(args.source):
         f = args.source
     else:
@@ -62,6 +77,8 @@ if __name__ == "__main__":
 
     if isinstance(ckpt, _ddp_mod.DistributedDataParallel):
         ckpt = {"state_dict": ckpt.module.state_dict()}
+    elif isinstance(ckpt, torch.nn.Module):
+        ckpt = {"state_dict": ckpt.state_dict()}
     elif isinstance(ckpt, dict):
         sd = ckpt.get("state_dict", ckpt)
         if any(k.startswith("module.") for k in sd):
