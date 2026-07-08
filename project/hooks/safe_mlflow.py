@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 from mmengine.visualization import MLflowVisBackend
 from mmengine.registry import VISBACKENDS
@@ -23,5 +24,5 @@ class SafeMLflowVisBackend(MLflowVisBackend):
 
     def add_image(self, name: str, image: np.ndarray, step: int = 0, **kwargs) -> None:
         if not name.endswith(('.jpg', '.png', '.jpeg')):
-            name += '.jpg'
+            name += f'{datetime.now().strftime("%Y-%m-%d %H_%M_%S")}.jpg'
         super().add_image(name, image, step, **kwargs)
