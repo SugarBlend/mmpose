@@ -1,28 +1,12 @@
-"""
-overlay.py — skeleton rendering + HUD helpers for pose comparison player.
-
-Key additions vs original:
-- Side-based joint/limb colouring  (left / right / center), 3 colours per model.
-- BodyPartFilter: decides which skeleton edges and joints to draw based on
-  enabled body-part flags and the active keypoint format.
-- draw_skeleton_pretty now accepts optional joint_r / limb_w overrides so the
-  player UI can pass slider values at render time.
-"""
 from __future__ import annotations
 
 import colorsys
-from pathlib import Path
 from typing import Literal
 
 import cairo
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Colour palettes
-# ──────────────────────────────────────────────────────────────────────────────
 
 def _hsl(h: float, s: float, l: float) -> tuple[float, float, float]:
     return colorsys.hls_to_rgb(h, l, s)
@@ -55,11 +39,6 @@ MODEL_COLORS = [_to_bgr(c) for c in MODEL_JOINT_COLORS]
 MODEL_LIMB_COLORS_BGR = [_to_bgr(c) for c in MODEL_LIMB_COLORS]
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Side-based colour triplets  (left / right / center)
-# Each model gets a triplet derived from its base hue.
-# ──────────────────────────────────────────────────────────────────────────────
-
 # (hue, sat, lit) overrides for the three roles
 _SIDE_LEFT_OFFSET   = (+0.00,  0.88, 0.55)   # same hue, vivid
 _SIDE_RIGHT_OFFSET  = (+0.50,  0.85, 0.55)   # complementary hue
@@ -83,22 +62,9 @@ MODEL_SIDE_COLORS: list[dict[str, tuple[float, float, float]]] = [
 ]
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Keypoint format metadata
-# ──────────────────────────────────────────────────────────────────────────────
-
 Side = Literal["left", "right", "center"]
 
 # fmt: off
-# Joint index → which body-part category it belongs to, and its side.
-# Supported formats: COCO-17, HALPE-26, HALPE-136, COCO-Wholebody-133
-
-# COCO-17: все 17 точек — это стандартный body.
-# Нос/глаза/уши входят в body (они часть скелета из 17 точек, не face-маска).
-# Запястья — body (не hands), колени/лодыжки — body (не feet).
-# hands = только детализированные точки ладоней (пальцы и т.д.)
-# feet  = только детализированные точки ступней (пальцы, пятка)
-# face  = только face-меш (контур + внутренние точки лица)
 _COCO17_JOINT_META: dict[int, tuple[str, Side]] = {
     0:  ("body", "center"),  # nose
     1:  ("body", "left"),    # left eye
@@ -141,24 +107,12 @@ _HALPE26_JOINT_META = _halpe26_meta()
 
 
 def _coco_wholebody133_meta() -> dict[int, tuple[str, Side]]:
-    """
-    COCO-Wholebody 133 (mmpose layout):
-      0-16   body keypoints (COCO-17)
-      17-22  feet: left foot detailed (big toe, small toe, heel × 2 sides — varies)
-             actual mmpose layout: 17-22 = left/right foot details
-      23-90  face mesh (68 points: contour + inner landmarks)
-      91-111 left hand (21 points: wrist + 4 fingers × 4 + thumb × 4 + tip)
-     112-132 right hand (21 points)
-    """
     m: dict[int, tuple[str, Side]] = {}
 
     # Body: 0-16
     for idx, val in _COCO17_JOINT_META.items():
         m[idx] = val
 
-    # Feet detailed: 17-22
-    # mmpose wholebody: 17=left_big_toe, 18=left_small_toe, 19=left_heel,
-    #                   20=right_big_toe, 21=right_small_toe, 22=right_heel
     feet_extra = {
         17: ("feet", "left"),
         18: ("feet", "left"),
@@ -187,13 +141,6 @@ _COCO133_JOINT_META = _coco_wholebody133_meta()
 
 
 def _halpe136_meta() -> dict[int, tuple[str, Side]]:
-    """
-    HALPE-136: HALPE-26 body (0-25) + left hand (21) + right hand (21) + face mesh (68).
-      0-25   body (HALPE-26: COCO-17 + head/neck/pelvis + toe/heel)
-     26-46   left hand (21 points)
-     47-67   right hand (21 points)
-     68-135  face mesh (68 points)
-    """
     m: dict[int, tuple[str, Side]] = dict(_HALPE26_JOINT_META)
     for idx in range(26, 47):
         m[idx] = ("hands", "left")
@@ -206,25 +153,138 @@ def _halpe136_meta() -> dict[int, tuple[str, Side]]:
 _HALPE136_JOINT_META = _halpe136_meta()
 
 
+def _goliath308_meta() -> dict[int, tuple[str, Side]]:
+    m: dict[int, tuple[str, Side]] = {}
+
+    # 0-4: nose, left_eye, right_eye, left_ear, right_ear
+    m[0]  = ("body", "center")  # nose
+    m[1]  = ("body", "left")    # left_eye
+    m[2]  = ("body", "right")   # right_eye
+    m[3]  = ("body", "left")    # left_ear
+    m[4]  = ("body", "right")   # right_ear
+    # 5-6: shoulders
+    m[5]  = ("body", "left")    # left_shoulder
+    m[6]  = ("body", "right")   # right_shoulder
+    # 7-8: elbows
+    m[7]  = ("body", "left")    # left_elbow
+    m[8]  = ("body", "right")   # right_elbow
+    # 9-10: hips
+    m[9]  = ("body", "left")    # left_hip
+    m[10] = ("body", "right")   # right_hip
+    # 11-12: knees
+    m[11] = ("body", "left")    # left_knee
+    m[12] = ("body", "right")   # right_knee
+    # 13-14: ankles
+    m[13] = ("body", "left")    # left_ankle
+    m[14] = ("body", "right")   # right_ankle
+
+    # 15-20: feet
+    m[15] = ("feet", "left")    # left_big_toe
+    m[16] = ("feet", "left")    # left_small_toe
+    m[17] = ("feet", "left")    # left_heel
+    m[18] = ("feet", "right")   # right_big_toe
+    m[19] = ("feet", "right")   # right_small_toe
+    m[20] = ("feet", "right")   # right_heel
+
+    # 21-41: right hand
+    for idx in range(21, 42):
+        m[idx] = ("hands", "right")
+
+    # 42-62: left hand
+    for idx in range(42, 63):
+        m[idx] = ("hands", "left")
+
+    # 63-68: extra body landmarks
+    m[63] = ("body", "left")    # left_olecranon
+    m[64] = ("body", "right")   # right_olecranon
+    m[65] = ("body", "left")    # left_cubital_fossa
+    m[66] = ("body", "right")   # right_cubital_fossa
+    m[67] = ("body", "left")    # left_acromion
+    m[68] = ("body", "right")   # right_acromion
+
+    # 69: neck
+    m[69] = ("body", "center")
+
+    _face_70_219_sides: list[Side] = [
+        # 70-77: center (glabella, nose_root, nose_bridge x4, labiomental, chin)
+        "center", "center", "center", "center", "center", "center", "center", "center",
+        # 78-86: right eyebrow (9 pts)
+        "right", "right", "right", "right", "right", "right", "right", "right", "right",
+        # 87-95: left eyebrow (9 pts)
+        "left", "left", "left", "left", "left", "left", "left", "left", "left",
+        # 96-119: left eyelid upper (24 pts: lash_line x9 + eyelid_line x8 + crease_line x7)
+        "left", "left", "left", "left", "left", "left", "left", "left", "left",
+        "left", "left", "left", "left", "left", "left", "left", "left",
+        "left", "left", "left", "left", "left", "left", "left",
+        # 120-143: right eyelid upper (24 pts)
+        "right", "right", "right", "right", "right", "right", "right", "right", "right",
+        "right", "right", "right", "right", "right", "right", "right", "right",
+        "right", "right", "right", "right", "right", "right", "right",
+        # 144-160: left eyelid lower (17 pts: lash_line x9 + eyelid_line x8)
+        "left", "left", "left", "left", "left", "left", "left", "left", "left",
+        "left", "left", "left", "left", "left", "left", "left", "left",
+        # 161-177: right eyelid lower (17 pts)
+        "right", "right", "right", "right", "right", "right", "right", "right", "right",
+        "right", "right", "right", "right", "right", "right", "right", "right",
+        # 178-187: nose detail (10 pts)
+        # 178=tip_of_nose, 179=bottom_center, 180=r_outer_corner, 181=l_outer_corner
+        # 182-184=r_nostril, 185-187=l_nostril
+        "center", "center", "right", "left", "right", "right", "right", "left", "left", "left",
+        # 188-219: mouth (32 pts)
+        # 188=r_outer_corner, 189=l_outer_corner, 190=cupid_bow(center), 191=lower_center
+        # 192-203: outer lip points (mix left/right/center)
+        # 204=r_inner, 205=l_inner, 206-219: inner lip
+        "right", "left", "center", "center",
+        "right", "left", "right", "left", "right", "right", "right", "right",
+        "left", "left", "left", "left",
+        "right", "left", "center", "center",
+        "right", "left", "right", "right", "right", "right",
+        "left", "left", "left", "left",
+    ]
+    for i, side in enumerate(_face_70_219_sides):
+        m[70 + i] = ("face", side)
+
+    # 220-245: left ear (26 pts, previous 256-281)
+    for idx in range(220, 246):
+        m[idx] = ("face", "left")
+
+    # 246-271: right ear (26 pts, previous 282-307)
+    for idx in range(246, 272):
+        m[idx] = ("face", "right")
+
+    # 272-280: left iris (9 pts, previous 308-316)
+    for idx in range(272, 281):
+        m[idx] = ("face", "left")
+
+    # 281-289: right iris (9 pts, previous 317-325)
+    for idx in range(281, 290):
+        m[idx] = ("face", "right")
+
+    # 290-298: left pupil (9 pts, previous 326-334)
+    for idx in range(290, 299):
+        m[idx] = ("face", "left")
+
+    # 299-307: right pupil (9 pts, previous 335-343)
+    for idx in range(299, 308):
+        m[idx] = ("face", "right")
+
+    return m
+
+
+_SAPIENS308_JOINT_META = _goliath308_meta()
+
+
 FORMAT_JOINT_META: dict[int, dict[int, tuple[str, Side]]] = {
     17:  _COCO17_JOINT_META,
     26:  _HALPE26_JOINT_META,
     133: _COCO133_JOINT_META,
     136: _HALPE136_JOINT_META,
+    308: _SAPIENS308_JOINT_META,
 }
 # fmt: on
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# BodyPartFilter
-# ──────────────────────────────────────────────────────────────────────────────
-
 class BodyPartFilter:
-    """
-    Decides which joints and skeleton edges are visible based on the
-    current enable-flags for body / face / hands / feet.
-    """
-
     PARTS = ("body", "face", "hands", "feet")
 
     def __init__(self) -> None:
@@ -274,43 +334,6 @@ class BodyPartFilter:
 body_filter = BodyPartFilter()
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Font helpers
-# ──────────────────────────────────────────────────────────────────────────────
-
-def _find_font(size: int) -> ImageFont.FreeTypeFont:
-    candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
-        "/System/Library/Fonts/Helvetica.ttc",
-        "/Library/Fonts/Arial.ttf",
-        "C:/Windows/Fonts/segoeui.ttf",
-    ]
-    for p in candidates:
-        if Path(p).exists():
-            return ImageFont.truetype(p, size)
-    return ImageFont.load_default()
-
-
-def _find_font_bold(size: int) -> ImageFont.FreeTypeFont:
-    candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/System/Library/Fonts/Helvetica.ttc",
-        "C:/Windows/Fonts/segoeuib.ttf",
-        "C:/Windows/Fonts/arialbd.ttf",
-    ]
-    for p in candidates:
-        if Path(p).exists():
-            return ImageFont.truetype(p, size)
-    return _find_font(size)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Cairo helpers
-# ──────────────────────────────────────────────────────────────────────────────
-
 def _cairo_surface_from_bgr(img: np.ndarray) -> tuple[cairo.ImageSurface, np.ndarray]:
     h, w = img.shape[:2]
     bgra = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
@@ -323,10 +346,6 @@ def _bgra_to_bgr(buf: np.ndarray, h: int, w: int) -> np.ndarray:
     bgra = buf.reshape(h, w, 4)
     return cv2.cvtColor(bgra, cv2.COLOR_BGRA2BGR)
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Core drawing
-# ──────────────────────────────────────────────────────────────────────────────
 
 def draw_skeleton_pretty(
     img: np.ndarray,
@@ -343,15 +362,6 @@ def draw_skeleton_pretty(
     shadow_a: float = 0.35,
     bpart_filter: BodyPartFilter | None = None,
 ) -> np.ndarray:
-    """
-    Render skeleton on *img* (in-place + returned).
-
-    Parameters
-    ----------
-    side_colors : optional dict with keys "left", "right", "center" → (r,g,b) 0-1.
-                  When provided, joints / limbs are coloured by body side.
-    bpart_filter: optional BodyPartFilter. When None, uses the module-level singleton.
-    """
     h, w = img.shape[:2]
     surface, buf = _cairo_surface_from_bgr(img)
     ctx = cairo.Context(surface)
@@ -359,7 +369,9 @@ def draw_skeleton_pretty(
 
     kp = np.asarray(keypoints, dtype=np.float64)
     has_score = kp.ndim == 2 and kp.shape[1] >= 3
+    kp[:, 2] /= max(1., max(kp[:, 2]))
     vis = (kp[:, 2] >= kpt_thr) if has_score else np.ones(len(kp), bool)
+
     xy = kp[:, :2]
     K = len(xy)
 
@@ -378,7 +390,6 @@ def draw_skeleton_pretty(
             return side_colors[side]
         return limb_color
 
-    # ── limbs ────────────────────────────────────────────────────────────────
     for a, b in skeleton:
         if a >= K or b >= K:
             continue
@@ -416,7 +427,6 @@ def draw_skeleton_pretty(
         ctx.line_to(x1, y1)
         ctx.stroke()
 
-    # ── joints ───────────────────────────────────────────────────────────────
     for i, (x, y) in enumerate(xy):
         if not vis[i]:
             continue
@@ -458,114 +468,3 @@ def draw_skeleton_pretty(
     np.copyto(img, result)
     return img
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# HUD
-# ──────────────────────────────────────────────────────────────────────────────
-
-class _HUDRenderer:
-    def __init__(self) -> None:
-        self._fonts: dict = {}
-
-    def _font(self, size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-        key = (size, bold)
-        if key not in self._fonts:
-            self._fonts[key] = _find_font_bold(size) if bold else _find_font(size)
-        return self._fonts[key]
-
-    def _tsz(self, draw: ImageDraw.ImageDraw, text: str, font) -> tuple[int, int]:
-        bb = draw.textbbox((0, 0), text, font=font)
-        return bb[2] - bb[0], bb[3] - bb[1]
-
-    def _rounded_rect(
-        self,
-        draw: ImageDraw.ImageDraw,
-        x0: int, y0: int, x1: int, y1: int,
-        radius: int,
-        fill: tuple,
-        outline: tuple | None = None,
-        outline_width: int = 1,
-    ) -> None:
-        draw.rounded_rectangle([x0, y0, x1, y1], radius=radius, fill=fill,
-                                outline=outline, width=outline_width)
-
-    def legend(
-        self,
-        layer: Image.Image,
-        legends: list[str],
-        joint_colors_f: list[tuple[float, float, float]],
-        limb_colors_f:  list[tuple[float, float, float]],
-        *,
-        mg: int = 10,
-    ) -> None:
-        draw = ImageDraw.Draw(layer)
-        font_title = self._font(14)
-        font_name  = self._font(18, bold=True)
-
-        dot_r  = 10
-        limb_sw = 36
-        limb_th = 6
-        gap = 10
-        pad = 20
-        row_h = 52
-
-        max_tw = max(self._tsz(draw, lg, font_name)[0] for lg in legends)
-        swatch_w = dot_r * 2 + gap + limb_sw + gap
-        pw = pad + swatch_w + max_tw + pad
-        title_h = self._tsz(draw, "MODELS", font_title)[1]
-        ph = pad + title_h + 10 + len(legends) * row_h + pad
-
-        x0, y0, x1, y1 = mg, mg, mg + pw, mg + ph
-
-        self._rounded_rect(draw, x0, y0, x1, y1, 10,
-                           fill=(18, 20, 28, 210),
-                           outline=(60, 65, 92, 200), outline_width=1)
-        draw.rounded_rectangle([x0, y0, x0 + 4, y1], radius=2,
-                                fill=(80, 140, 255, 255))
-        draw.text((x0 + pad + 2, y0 + pad), "MODELS", font=font_title,
-                  fill=(120, 128, 160, 200))
-
-        for i, (lg, jc, lc) in enumerate(zip(legends, joint_colors_f, limb_colors_f)):
-            cy = y0 + pad + title_h + 10 + i * row_h + row_h // 2
-            jx = x0 + pad + dot_r + 2
-            jc8 = tuple(int(c * 255) for c in jc) + (255,)
-            draw.ellipse([jx - dot_r - 3, cy - dot_r - 3,
-                          jx + dot_r + 3, cy + dot_r + 3],
-                         fill=(240, 242, 250, 255))
-            draw.ellipse([jx - dot_r, cy - dot_r, jx + dot_r, cy + dot_r],
-                         fill=jc8)
-            draw.ellipse([jx - dot_r // 2 - 1, cy - dot_r // 2 - 1,
-                          jx - dot_r // 4,      cy - dot_r // 4],
-                         fill=(255, 255, 255, 160))
-
-            lx0 = jx + dot_r + gap
-            lx1 = lx0 + limb_sw
-            lc8 = tuple(int(c * 255) for c in lc) + (220,)
-            draw.rounded_rectangle(
-                [lx0, cy - limb_th // 2, lx1, cy + limb_th // 2],
-                radius=limb_th // 2, fill=lc8,
-            )
-
-            tx = lx1 + gap
-            th = self._tsz(draw, lg, font_name)[1]
-            draw.text((tx, cy - th // 2), lg, font=font_name,
-                      fill=(232, 235, 248, 255))
-
-
-_hud = _HUDRenderer()
-
-
-def render_hud(
-    img: np.ndarray,
-    legends: list[str],
-    joint_colors: list[tuple[float, float, float]],
-    limb_colors:  list[tuple[float, float, float]],
-    current_idx: int,
-    total: int,
-) -> np.ndarray:
-    h, w = img.shape[:2]
-    base_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGBA))
-    layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    _hud.legend(layer, legends, joint_colors, limb_colors)
-    out_pil = Image.alpha_composite(base_pil, layer)
-    return cv2.cvtColor(np.array(out_pil), cv2.COLOR_RGBA2BGR)
