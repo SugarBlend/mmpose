@@ -458,7 +458,7 @@ class OpencvBackendVisualizer(Visualizer):
             # will be updated with `win_name`.
             if not hasattr(self, win_name):
                 self._cv_win_name = win_name
-                cv2.namedWindow(winname=f'{id(self)}')
+                cv2.namedWindow(winname=f'{id(self)}', flags=cv2.WINDOW_GUI_EXPANDED & cv2.WINDOW_KEEPRATIO)
                 cv2.setWindowTitle(f'{id(self)}', win_name)
             else:
                 cv2.setWindowTitle(f'{id(self)}', win_name)

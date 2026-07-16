@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-
 SKELETON_SUBSETS: dict[str, dict[str, list[int]]] = {
     "coco_wholebody": {
         "body": list(range(0, 17)),
@@ -46,18 +43,18 @@ ochuman_halpe26 = [(i, i) for i in range(17)]
 
 goliath308_halpe26 = [
     # Halpe26: 0-16 COCO body, 17-22 foot, 23-25 extra (head_top, neck, hip/pelvis)
-    (0,  0),   # Nose
-    (1,  1),   # LEye
-    (2,  2),   # REye
-    (3,  3),   # LEar
-    (4,  4),   # REar
-    (5,  5),   # LShoulder
-    (6,  6),   # RShoulder
-    (7,  7),   # LElbow
-    (8,  8),   # RElbow
+    (0, 0),   # Nose
+    (1, 1),   # LEye
+    (2, 2),   # REye
+    (3, 3),   # LEar
+    (4, 4),   # REar
+    (5, 5),   # LShoulder
+    (6, 6),   # RShoulder
+    (7, 7),   # LElbow
+    (8, 8),   # RElbow
     (62, 9),   # LWrist (goliath: 62)
     (41, 10),  # RWrist (goliath: 41)
-    (9,  11),  # LHip
+    (9, 11),  # LHip
     (10, 12),  # RHip
     (11, 13),  # LKnee
     (12, 14),  # RKnee
@@ -69,7 +66,7 @@ goliath308_halpe26 = [
     # Hip/pelvis is the average of left+right hip. There is no direct analog; we use goliath, which doesn't have a
     # pelvis. We'll leave it as 0.0 or skip it for evaluation; we'll just take the average: but KeypointConverter
     # doesn't support the average, so we'll map it to left_hip as an approximation.
-    (9,  19),  # Hip (zooming in via left_hip)
+    (9, 19),  # Hip (zooming in via left_hip)
     # foot (20-25)
     (15, 20),  # LBigToe
     (18, 21),  # RBigToe
@@ -88,3 +85,11 @@ halpe2coco_wholebody: dict[str, tuple[list[int], list[int]]] = {
 coco2coco_wholebody: dict[str, tuple[list[int], list[int]]] = {
     "body": (list(range(17)), list(range(17))),
 }
+
+converters = dict(
+    coco133_halpe26=coco133_halpe26,
+    crowdpose_halpe26=crowdpose_halpe26,
+    halpe_halpe26=halpe_halpe26,
+    ochuman_halpe26=ochuman_halpe26,
+    goliath308_halpe26=goliath308_halpe26
+)

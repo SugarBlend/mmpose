@@ -13,6 +13,7 @@ from urllib.parse import unquote
 from dotenv import load_dotenv
 from collections import defaultdict
 import re
+from tqdm import tqdm
 
 
 logger = logging.getLogger(__name__)
@@ -46,17 +47,18 @@ class LSConverter(object):
 
         seen_image_ids: set[int] = set()
 
-        for idx, task in enumerate(tasks):
+        pb = tqdm(total=len(tasks), desc="Progress", leave=True, ncols=80, unit="task")
+        for task in tasks:
             image_name = Path(unquote(task["data"]["image"])).relative_to(args.root_dataset_path).as_posix()
             image_id = task["id"]
 
-            if not task.get("annotations"):
-                logger.debug(f"No annotations for project: '{project_name}', task {idx}, '{task['data']['image']}'")
+            if not task.get(args.data_type):
+                logger.debug(f"No {args.data_type} for project: '{project_name}', task {pb.n}, '{task['data']['image']}'")
                 continue
 
-            for annotation in task["annotations"]:
+            for annotation in task[args.data_type]:
                 if annotation.get("was_cancelled"):
-                    logger.debug(f"Skipping cancelled annotation for task {idx}, '{image_name}'")
+                    logger.debug(f"Skipping cancelled annotation for task {pb.n}, '{image_name}'")
                     continue
 
                 results = annotation["result"]
@@ -127,6 +129,7 @@ class LSConverter(object):
 
                 for label in polygons:
                     self.process_polygon(label, annotations)
+            pb.update()
 
         description = {
             "images": images,
@@ -200,7 +203,14 @@ class LSConverter(object):
         })
 
     def _export_project_annotations(self, project_id: int) -> list[dict[str, Any]]:
-        export_job = self.client.projects.exports.create(id=project_id, title=f"Export_{project_id}")
+        export_job = self.client.projects.exports.create(
+            id=project_id,
+            title=f"Export_{project_id}",
+            serialization_options={
+                "predictions": {"only_id": False},
+                "drafts": {"only_id": False},
+            },
+        )
         export_id = export_job.id
         logger.info(f"Snapshot export created: {export_id}")
 
@@ -215,7 +225,7 @@ class LSConverter(object):
                 logger.info(f"Waiting for export {export_id}, status: {job.status}")
                 time.sleep(2)
 
-        tasks = self.client.projects.exports.download(id=project_id, export_pk=export_id)
+        tasks = self.client.projects.exports.download(id=project_id, export_pk=export_id, export_type="JSON")
         tasks_json = json.loads(b"".join(tasks).decode("utf-8"))
         return tasks_json
 
@@ -223,8 +233,9 @@ class LSConverter(object):
         compiler = re.compile(args.name_pattern)
         for project in self.client.projects.list().items:
             if compiler.search(project.title):
-                if not project.total_annotations_number:
-                    logger.warning(f"Skip empty project: '{project.title}', doesn't detect any annotations.")
+                counter = project.total_annotations_number if args.data_type == "annotations" else project.total_predictions_number
+                if not counter:
+                    logger.warning(f"Skip empty project: '{project.title}', doesn't detect any {args.data_type}.")
                     continue
 
                 logger.info(f"Processing project: {project.title} (id={project.id})")
@@ -246,6 +257,9 @@ if __name__ == "__main__":
                         help="Regular expression for filtering project by them name.")
     # parser.add_argument("--name_pattern", default=r"Hands\s\+\sBody Pose Annotation",
     #                     help="Regular expression for filtering project by them name.")
+    parser.add_argument("--data_type", choices=["predictions", "annotations"], default="annotations",
+                        help="'Predictions' are the type of data obtained from LS from an auto-labeler, "
+                             "'annotations' are data from LS that are marked up by people. ")
     args = parser.parse_args()
 
     load_dotenv()
