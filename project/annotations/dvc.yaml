@@ -1,0 +1,50 @@
+stages:
+  fetch:
+    foreach: ${datasets}
+    do:
+      cmd: mc mirror --max-workers 1 local/${item.ann_relative_path} standard/${key}
+      outs:
+        - standard/${key}:
+            cache: false
+
+  convert_ls_to_coco:
+    # permanent link to "datasets" bucket in S3/Minio storage
+    cmd: >
+      python ../label_studio/tasks2json.py --root-dataset-path s3://datasets --output_folder ${convert.output_folder}
+
+    deps:
+      - ../label_studio/tasks2json.py
+    params:
+      - convert.search_pattern
+      - convert.output_folder
+    outs:
+      - ${convert.output_folder}:
+          cache: false
+
+  split_coco:
+    cmd: >
+      python ../label_studio/coco_split.py 
+      --annotations_dir ${convert.ls_output_folder} 
+      --output_dir ${convert.user_output_folder} 
+      --train_ratio ${split.train_ratio} 
+      --val_ratio ${split.val_ratio} 
+      --test_ratio ${split.test_ratio} 
+      --seed ${split.seed} 
+      --pattern "${convert.search_pattern}"
+      --split_mode ${split.mode}
+    deps:
+      - ../label_studio/coco_split.py
+      - ${convert.ls_output_folder}
+    params:
+      - split.train_ratio
+      - split.val_ratio
+      - split.test_ratio
+      - split.seed
+      - split.mode
+      - convert.search_pattern
+      - convert.ls_output_folder
+      - convert.user_output_folder
+    outs:
+      - ${convert.user_output_folder}/train.json
+      - ${convert.user_output_folder}/val.json
+      - ${convert.user_output_folder}/test.json

@@ -1,4 +1,5 @@
 dataset_info = dict(
+    CLASSES = ('person',),
     dataset_name='halpe',
     paper_info=dict(
         author='Li, Yong-Lu and Xu, Liang and Liu, Xinpeng and Huang, Xijie'

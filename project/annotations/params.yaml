@@ -1,0 +1,40 @@
+datasets:
+  aic:
+    ann_relative_path: datasets/AIC/annotations
+  coco:
+    ann_relative_path: datasets/Coco2017/annotations
+  cofw:
+    ann_relative_path: datasets/COFW/annotations
+  crowdpose:
+    ann_relative_path: datasets/CrowdPose/annotations
+  halpe:
+    ann_relative_path: datasets/hico_20150920/annotations
+  humanart:
+    ann_relative_path: datasets/HumanArt/annotations
+  interhand26m:
+    ann_relative_path: datasets/InterHand2.6M/annotations
+  jhmdb:
+    ann_relative_path: datasets/JHMDB/annotations
+  lapa:
+    ann_relative_path: datasets/LaPa/annotations
+  mpii:
+    ann_relative_path: datasets/MPII/annotations
+  ochuman:
+    ann_relative_path: datasets/OCHuman/annotations
+  ubody:
+    ann_relative_path: datasets/UBody/annotations
+  wflw:
+    ann_relative_path: datasets/WFLW/annotations
+
+
+convert:
+  search_pattern: ^Pose Annotation
+  ls_output_folder: labelstudio_anns/halpe26
+  user_output_folder: custom
+
+split:
+  train_ratio: 0.7
+  val_ratio: 0.2
+  test_ratio: 0.1
+  seed: 42
+  mode: images

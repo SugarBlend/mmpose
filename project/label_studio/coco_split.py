@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any
 from collections import defaultdict
 from tqdm import tqdm
+import re
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,9 @@ logging.basicConfig(level=getattr(logging, os.getenv("LOG_LEVEL", default="INFO"
 
 
 def load_coco_files(annotations_dir: Path, pattern: str) -> tuple[list[dict], list[dict], list[dict]]:
-    json_files = sorted(annotations_dir.glob(f"{pattern}.json"))
+    compiler = re.compile(pattern)
+    json_files = [item for item in annotations_dir.glob("*.json") if compiler.search(item.name)]
+
     if not json_files:
         raise FileNotFoundError(f"No JSON files found in '{annotations_dir}' with such seacrhing pattern: '{pattern}'")
 
