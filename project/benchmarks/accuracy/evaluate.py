@@ -6,11 +6,13 @@ from pycocotools.coco import COCO
 import json
 import torch
 
+from project.benchmarks.accuracy.surrogate_wrapper import AnnFormats
+
 sys.path.insert(0, Path(__file__).parents[3].as_posix())
 
 from config import EvalConfig, ModelConfig
-from surrogate_wrapper import SurrogateEstimatorWrapper, attempt_download_default
-from metrics_wrapper import BaseMetricConfigurator, CocoMetricConfigurator, correspondence
+from surrogate_wrapper import SurrogateEstimatorWrapper
+from metrics_wrapper import BaseMetricConfigurator, correspondence
 from project.label_studio.pipelines.pipeline import MMPipeline
 from tools import logger, generate_radar_plot, save_metrics_xlsx, generate_radar_plot_html
 
@@ -44,14 +46,9 @@ class EvaluationOrchestrator(object):
         num_samples: int | None = None,
     ) -> dict[str, float]:
         self.load_annotations(config.ann_file, num_samples)
-
-        if config.anns_schema == "coco_wholebody" and config.expected_joints != 133:
-            local_estimator = MMPipeline(*attempt_download_default())
-            self.surrogate_estimator.pipeline = local_estimator
-            results = self.surrogate_estimator(config.dataset_folder, config.expected_joints)
-        else:
-            self.surrogate_estimator.pipeline = self.pipeline
-            results = self.surrogate_estimator(config.dataset_folder)
+        self.surrogate_estimator.pipeline = self.pipeline
+        self.surrogate_estimator.predict_converters = config.pred_converters
+        results = self.surrogate_estimator(config.dataset_folder, config.ann_format)
 
         return {k: v for evaluator in self.evaluators for k, v in evaluator.calculate_results(results).items()}
 
@@ -71,11 +68,11 @@ def launch_evaluation(config: EvalConfig) -> dict[str, dict[str, float]] | None:
 
         metric_evaluators: [BaseMetricConfigurator] = []
         for name, params in config.metrics.__dict__.items():
-            params.update({'pred_converter': desc.pred_converter, 'gt_converter': desc.gt_converter,
-                           'ann_file': desc.ann_file})
-            metric_evaluator = correspondence[name](desc.anns_schema, params=params.copy())
-            if isinstance(metric_evaluator, CocoMetricConfigurator):
-                metric_evaluator.update_metadata(pipeline)
+            params.update({
+                'gt_converter': desc.gt_converter,
+                'ann_file': desc.ann_file
+            })
+            metric_evaluator = correspondence[name](metapath=desc.meta_file, params=params.copy())
             metric_evaluators.append(metric_evaluator)
 
         if not metric_evaluators:
@@ -86,7 +83,11 @@ def launch_evaluation(config: EvalConfig) -> dict[str, dict[str, float]] | None:
         orchestrator = EvaluationOrchestrator(pipeline, metric_evaluators, surrogate_wrapper)
         metrics = orchestrator.evaluate(desc)
         exp_metrics[desc.legend] = dict(sorted(metrics.items()))
-        is_whole_body = next(iter(orchestrator.evaluators)).is_whole_body
+
+        is_gt_whole_body = desc.ann_format == AnnFormats.CocoWholeBody
+
+        any_whole_body_out = any(converter["num_keypoints"] == 133 for converter in desc.pred_converters) if desc.pred_converters else False
+        is_whole_body = any_whole_body_out or is_gt_whole_body
         logger.info(f"Results: {metrics}")
 
     save_dir = config.visualization.save_dir
@@ -106,14 +107,14 @@ def launch_evaluation(config: EvalConfig) -> dict[str, dict[str, float]] | None:
                             config.visualization.show_plot, title="Pose model comparison")
 
         generate_radar_plot_html(exp_metrics, is_whole_body,
-                                 save_dir.joinpath("radar.html").as_posix(), title="Halpe26 dataset")
+                                 save_dir.joinpath("radar.html").as_posix(), title="Coco Wholebody dataset")
 
     return exp_metrics
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Pose model evaluation with flexible keypoint subsets")
-    parser.add_argument("--config", "-c", type=str, default="eval-config_halpe26.yaml",
+    parser.add_argument("--config", "-c", type=str, default="eval-config_wholebody.yaml",
                         help="Path to eval-config.yaml")
     return parser.parse_args()
 

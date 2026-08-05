@@ -86,10 +86,27 @@ coco2coco_wholebody: dict[str, tuple[list[int], list[int]]] = {
     "body": (list(range(17)), list(range(17))),
 }
 
+halpe136_coco133 = (
+    [(i, i) for i in range(17)] +
+    [(20, 17), (22, 18), (24, 19), (21, 20), (23, 21), (25, 22)] +
+    [(26 + i, 23 + i) for i in range(68)] +
+    [(94 + i, 91 + i) for i in range(21)] +
+    [(115 + i, 112 + i) for i in range(21)]
+)
+halpe26_coco133 = (
+    [(i, i) for i in range(17)] +
+    [(20, 17), (22, 18), (24, 19), (21, 20), (23, 21), (25, 22)]
+)
+hand21_coco133_left = [(i, 91 + i) for i in range(21)]
+hand21_coco133_right = [(i, 112 + i) for i in range(21)]
+
 converters = dict(
     coco133_halpe26=coco133_halpe26,
     crowdpose_halpe26=crowdpose_halpe26,
     halpe_halpe26=halpe_halpe26,
     ochuman_halpe26=ochuman_halpe26,
-    goliath308_halpe26=goliath308_halpe26
+    goliath308_halpe26=goliath308_halpe26,
+    halpe136_coco133=halpe136_coco133,
+    hand21_coco133_left=hand21_coco133_left,
+    hand21_coco133_right=hand21_coco133_right,
 )

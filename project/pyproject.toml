@@ -25,9 +25,10 @@ dependencies = [
 [dependency-groups]
 graphics = [
     "pycairo",
+    "plotly==6.9.*"
 ]
 ray = [
-    "ray[tune]==2.55.*",
+    "ray[tune]>=2.9,<2.55",
     "ray[default]",
     "optuna",
 ]

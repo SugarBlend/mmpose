@@ -38,6 +38,10 @@ class MMPipeline(object):
             self.model = init_pose_estimator(self.pose_config, self.pose_checkpoint, device=device)
             self.model.eval()
             self.model.cuda()
+
+            for i in range(-1, -len(self.model.cfg.test_dataloader.dataset.pipeline) - 1, -1):
+                if self.model.cfg.test_dataloader.dataset.pipeline[i]["type"] == "KeypointConverter":
+                    self.model.cfg.test_dataloader.dataset.pipeline.pop(i)
         elif self.pose_checkpoint.endswith(".engine"):
             self.model = TensorRTExecutor(self.pose_checkpoint, device, "ERROR")
         else:

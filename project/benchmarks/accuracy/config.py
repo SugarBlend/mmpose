@@ -1,13 +1,9 @@
 from __future__ import annotations
-
-from dataclasses import dataclass
 from pathlib import Path
-import numpy as np
-from typing import Optional
 import yaml
 import warnings
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
+from typing import List, Dict
 import maps
 
 
@@ -28,6 +24,16 @@ class ModelConfig:
             "description": "Path to the configuration path of the current model."
         }
     )
+    meta_file: str = field(
+        metadata={
+            "description": "Path to the meta file describing the entire dataset."
+        }
+    )
+    ann_format: str = field(
+        metadata={
+            "description": "Annotation file format."
+        }
+    )
     dataset_folder: str = field(
         metadata={
             "description": "Path to base folder, paths which provided in coco-annotations will be relative them folder."
@@ -39,12 +45,6 @@ class ModelConfig:
             "description": "Path to the annotations file which created in coco-style."
         }
     )
-    expected_joints: int = field(
-        metadata={
-            "description": "Expected number of output keypoints, this number - have undefined position in the model's "
-                           "config, that's why need to pass manually. "
-        }
-    )
     anns_schema: str = field(
         default="coco_wholebody",
         metadata={
@@ -53,14 +53,14 @@ class ModelConfig:
         }
     )
 
-    gt_converter: str | None = field(
+    gt_converter: dict | None = field(
         default=None,
         metadata={
             "description": "The name of the key for converting ground truth keypoints in different forms between each "
                            "other, described in the structure: 'maps.converters'."
         }
     )
-    pred_converter: str | None = field(
+    pred_converters: list[dict] | None = field(
         default=None,
         metadata={
             "description": "The name of the key for converting prediction keypoints in different forms between each "
@@ -80,13 +80,6 @@ class ModelConfig:
             warnings.warn("[ModelConfig] Value of 'anns_schema' is not possible, allowed "
                           f"combinations: {maps.SKELETON_SUBSETS}", stacklevel=2)
             raise
-
-        # for attr in ("gt_converter", "pred_converter"):
-        #     value = getattr(self, attr)
-        #     if not maps.converters.get(value):
-        #         warnings.warn(f"[ModelConfig] Value of '{attr}' is not possible, allowed "
-        #                       f"combinations: {maps.converters.keys()}", stacklevel=2)
-        #         raise
 
 
 @dataclass
@@ -128,6 +121,7 @@ class RenderConfig:
 
 @dataclass
 class COCOMetrics:
+    type: str = "CocoWholeBodyMetric"
     iou_type: str = "keypoints"
     score_mode: str = "keypoint"
     keypoint_score_thr: float = 0.2

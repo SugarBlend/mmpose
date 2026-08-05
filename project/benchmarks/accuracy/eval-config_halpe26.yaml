@@ -1,15 +1,15 @@
 models:
-  - legend: "RTMPose-halpe-X default(26)"
-    model_path: "E:/Projects/mmpose/project/checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"
-    config_path: "E:/Projects/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py"
-#    dataset_folder: "D:/Datasets/val2017/val2017"
-#    ann_file: "E:/Projects/mmpose/project/annotations/standard/halpe_val_v1.json"
-    dataset_folder: "minio://"
-    ann_file: "E:/Projects/mmpose/project/annotations/split/val.json"
-    anns_schema: "halpe26"
-    expected_joints: 26
-    gt_converter: "halpe_halpe26"
-    pred_converter: null
+#  - legend: "RTMPose-halpe-X default(26)"
+#    model_path: "E:/Projects/mmpose/project/checkpoints/rtmpose/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth"
+#    config_path: "E:/Projects/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py"
+##    dataset_folder: "D:/Datasets/val2017/val2017"
+##    ann_file: "E:/Projects/mmpose/project/annotations/standard/halpe_val_v1.json"
+#    dataset_folder: "minio://"
+#    ann_file: "E:/Projects/mmpose/project/annotations/split/val.json"
+#    anns_schema: "halpe26"
+#    expected_joints: 26
+#    gt_converter: "halpe_halpe26"
+#    pred_converter: null
 
   - legend: "ViTPose-simple-halpe-base 256x192 FT(26) v.0.9.3.0 build 9.2"
     model_path: "E:/ViTrackerStaff/models/pose_estimation/mmpose/PyTorch/ViTPose-base-simple-halpe26_8xb64-100e_coco-256x192_20260331.pth"
