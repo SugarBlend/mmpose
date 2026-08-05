@@ -1,0 +1,177 @@
+schema: '2.0'
+stages:
+  fetch_coco:
+    cmd: mc cp -r local/datasets/Coco2017/annotations standard/coco
+    outs:
+    - path: standard/coco
+      hash: md5
+      md5: 2cab32b19edd5589989ffd05061c2ae2.dir
+      size: 3540461100
+      nfiles: 4
+  fetch@aic:
+    cmd: mc mirror --max-workers 1 local/datasets/AIC/annotations standard/aic
+    outs:
+    - path: standard/aic
+      hash: md5
+      md5: 34fb9cfc14d900ca130a3072c98791c5.dir
+      size: 608702372
+      nfiles: 2
+  fetch@coco:
+    cmd: mc mirror --max-workers 1 local/datasets/Coco2017/annotations 
+      standard/coco
+    outs:
+    - path: standard/coco
+      hash: md5
+      md5: 312cb9d8160c8cd586f864148206a620.dir
+      size: 3540461100
+      nfiles: 4
+  fetch@cofw:
+    cmd: mc mirror --max-workers 1 local/datasets/COFW/annotations standard/cofw
+    outs:
+    - path: standard/cofw
+      hash: md5
+      md5: e97449829549b351904a87b4a2fbe360.dir
+      size: 2779273
+      nfiles: 2
+  fetch@crowdpose:
+    cmd: mc mirror --max-workers 1 local/datasets/CrowdPose/annotations 
+      standard/crowdpose
+    outs:
+    - path: standard/crowdpose
+      hash: md5
+      md5: 527b0f31429c1e6dd51fa365e9ed1922.dir
+      size: 121198844
+      nfiles: 4
+  fetch@halpe:
+    cmd: mc mirror --max-workers 1 local/datasets/hico_20150920/annotations 
+      standard/halpe
+    outs:
+    - path: standard/halpe
+      hash: md5
+      md5: 0ee333e1935ca7a8c81ab2ca8d3b42dc.dir
+      size: 292970800
+      nfiles: 2
+  fetch@humanart:
+    cmd: mc mirror --max-workers 1 local/datasets/HumanArt/annotations 
+      standard/humanart
+    outs:
+    - path: standard/humanart
+      hash: md5
+      md5: 82772950a14f0e5cd6eaaefcfe69235b.dir
+      size: 919947288
+      nfiles: 44
+  fetch@interhand26m:
+    cmd: mc mirror --max-workers 1 local/datasets/InterHand2.6M/annotations 
+      standard/interhand26m
+    outs:
+    - path: standard/interhand26m
+      hash: md5
+      md5: 252c4ac7f6516e6a32a20efd90e2cc67.dir
+      size: 3239807475
+      nfiles: 30
+  fetch@jhmdb:
+    cmd: mc mirror --max-workers 1 local/datasets/JHMDB/annotations 
+      standard/jhmdb
+    outs:
+    - path: standard/jhmdb
+      hash: md5
+      md5: c19d3f5fe866a06dfb0df96f67b02489.dir
+      size: 60929175
+      nfiles: 6
+  fetch@lapa:
+    cmd: mc mirror --max-workers 1 local/datasets/LaPa/annotations standard/lapa
+    outs:
+    - path: standard/lapa
+      hash: md5
+      md5: b15a2acd1376a64f593ed6c4734c7a59.dir
+      size: 97757553
+      nfiles: 4
+  fetch@mpii:
+    cmd: mc mirror --max-workers 1 local/datasets/MPII/annotations standard/mpii
+    outs:
+    - path: standard/mpii
+      hash: md5
+      md5: 2fd6be673411d915fbce64d040007537.dir
+      size: 76728721
+      nfiles: 4
+  fetch@ochuman:
+    cmd: mc mirror --max-workers 1 local/datasets/OCHuman/annotations 
+      standard/ochuman
+    outs:
+    - path: standard/ochuman
+      hash: md5
+      md5: 1f3ca56ebb08111acf50371b4a2ae0ee.dir
+      size: 72811598
+      nfiles: 3
+  fetch@ubody:
+    cmd: mc mirror --max-workers 1 local/datasets/UBody/annotations 
+      standard/ubody
+    outs:
+    - path: standard/ubody
+      hash: md5
+      md5: cb45d92406e2148a42ea6aa2ba2c556f.dir
+      size: 24774769365
+      nfiles: 62
+  fetch@wflw:
+    cmd: mc mirror --max-workers 1 local/datasets/WFLW/annotations standard/wflw
+    outs:
+    - path: standard/wflw
+      hash: md5
+      md5: 8839387270d7b5e836c59aed4bbe8dea.dir
+      size: 40827875
+      nfiles: 8
+  convert_ls_to_coco:
+    cmd: "python ../label_studio/tasks2json.py --root-dataset-path s3://datasets --output_folder
+      labelstudio_anns/halpe26 \n"
+    deps:
+    - path: ../label_studio/tasks2json.py
+      hash: md5
+      md5: 82c95183ff9787291fb9c4afdda43cf5
+      size: 10826
+    params:
+      params.yaml:
+        convert.output_folder: labelstudio_anns/halpe26
+        convert.search_pattern: ^Pose Annotation
+    outs:
+    - path: labelstudio_anns/halpe26
+      hash: md5
+      md5: 41549cb5954d28644a653d9eb0e2f01a.dir
+      size: 8500816
+      nfiles: 14
+  split_coco:
+    cmd: "python ../label_studio/coco_split.py  --annotations_dir labelstudio_anns/halpe26\
+      \  --output_dir custom  --train_ratio 0.7  --val_ratio 0.2  --test_ratio 0.1\
+      \  --seed 42  --pattern \"^Pose Annotation\" --split_mode images\n"
+    deps:
+    - path: ../label_studio/coco_split.py
+      hash: md5
+      md5: 5fa7839e81d804117f0e653271dcbfda
+      size: 10381
+    - path: labelstudio_anns/halpe26
+      hash: md5
+      md5: 41549cb5954d28644a653d9eb0e2f01a.dir
+      size: 8500816
+      nfiles: 14
+    params:
+      params.yaml:
+        convert.ls_output_folder: labelstudio_anns/halpe26
+        convert.search_pattern: ^Pose Annotation
+        convert.user_output_folder: custom
+        split.mode: images
+        split.seed: 42
+        split.test_ratio: 0.1
+        split.train_ratio: 0.7
+        split.val_ratio: 0.2
+    outs:
+    - path: custom/test.json
+      hash: md5
+      md5: 3600d949fb8322440ab547ed3743ce59
+      size: 851013
+    - path: custom/train.json
+      hash: md5
+      md5: 1e0a0b72f15757772c4ba498015c27ce
+      size: 5947797
+    - path: custom/val.json
+      hash: md5
+      md5: 14d35f8c87e1736fc23ea84bc41e8c2e
+      size: 1699890
