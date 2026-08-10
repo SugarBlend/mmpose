@@ -2,7 +2,7 @@ stages:
   fetch:
     foreach: ${datasets}
     do:
-      cmd: mc mirror --max-workers 1 local/${item.ann_relative_path} standard/${key}
+      cmd: mc mirror --max-workers 1 minio/${item.ann_relative_path} standard/${key}
       outs:
         - standard/${key}:
             cache: false
@@ -10,15 +10,15 @@ stages:
   convert_ls_to_coco:
     # permanent link to "datasets" bucket in S3/Minio storage
     cmd: >
-      python ../label_studio/tasks2json.py --root-dataset-path s3://datasets --output_folder ${convert.output_folder}
+      python ../label_studio/tasks2json.py --root-dataset-path s3://datasets --output_folder ${convert.ls_output_folder}
 
     deps:
       - ../label_studio/tasks2json.py
     params:
       - convert.search_pattern
-      - convert.output_folder
+      - convert.ls_output_folder
     outs:
-      - ${convert.output_folder}:
+      - ${convert.ls_output_folder}:
           cache: false
 
   split_coco:

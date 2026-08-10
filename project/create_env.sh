@@ -12,7 +12,7 @@ else
     exit 1
 fi
 
-uv pip install poetry wheel setuptools==79.0.1
+uv pip install poetry wheel setuptools==70.*
 
 # DeployAndServe consider export for Sapiens and completed tensorrt runner
 if [ ! -d ./-DeployAndServe ]; then
@@ -37,6 +37,7 @@ else
   git clone https://github.com/open-mmlab/mmcv.git
   cd mmcv
   git checkout v2.1.0
+  uv pip install setuptools==70.*
   uv run python setup.py bdist_wheel
   uv pip install ./dist/mmcv-2.1.0*.whl
   cd ..
