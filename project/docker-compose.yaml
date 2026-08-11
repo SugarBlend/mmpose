@@ -3,6 +3,7 @@ services:
     privileged: true
     tty: true
     stdin_open: true
+    shm_size: 16gb
     image: mmpose_finetuning:0.1.0
     build:
       context: ..

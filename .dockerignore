@@ -8,24 +8,49 @@
 !project/
 !project/**
 
+!mmpose/
+!mmpose/**
+
 !tools/
 !tools/**
+
+!setup.py
+!README.md
 
 !requirements/
 !requirements/**
 !requirements.txt
 
-# (опционально) если хочешь оставить root файлы типа Dockerfile
 !Dockerfile
 !docker-compose.yml
 
-project/annotations/
-project/annotations/**
-
-project/checkpoints/
-project/checkpoints/**
-
 project/visualizers
 project/visualizers/**
-project/standard_anns
-project/standard_anns/**
+
+.git
+.gitignore
+.idea
+.vscode
+
+.venv
+venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+data/
+datasets/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.ckpt
+mlruns/
+wandb/
+outputs/
+runs/
+
+.dvc/cache
+.dvc/tmp
