@@ -7,5 +7,7 @@ class CompileModelHook(Hook):
     def before_train(self, runner):
         model = runner.model.module if hasattr(runner.model, 'module') else runner.model
         model.backbone.compile(mode='max-autotune-no-cudagraphs')
-        model.neck.compile(mode='max-autotune-no-cudagraphs')
-        model.head.compile(mode='max-autotune-no-cudagraphs')
+        if model.with_neck:
+            model.neck.compile(mode='max-autotune-no-cudagraphs')
+        if model.with_head:
+           model.head.compile(mode='max-autotune-no-cudagraphs')

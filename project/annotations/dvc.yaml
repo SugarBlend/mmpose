@@ -11,11 +11,12 @@ stages:
     # permanent link to "datasets" bucket in S3/Minio storage
     cmd: >
       python ../label_studio/tasks2json.py --root-dataset-path s3://datasets --output_folder ${convert.ls_output_folder}
+      --patterns "${convert.search_patterns}"
 
     deps:
       - ../label_studio/tasks2json.py
     params:
-      - convert.search_pattern
+      - convert.search_patterns
       - convert.ls_output_folder
     outs:
       - ${convert.ls_output_folder}:
@@ -30,7 +31,7 @@ stages:
       --val_ratio ${split.val_ratio} 
       --test_ratio ${split.test_ratio} 
       --seed ${split.seed} 
-      --pattern "${convert.search_pattern}"
+      --patterns "${convert.search_patterns}"
       --split_mode ${split.mode}
     deps:
       - ../label_studio/coco_split.py
@@ -41,7 +42,7 @@ stages:
       - split.test_ratio
       - split.seed
       - split.mode
-      - convert.search_pattern
+      - convert.search_patterns
       - convert.ls_output_folder
       - convert.user_output_folder
     outs:

@@ -113,10 +113,10 @@ def get_ls_fields(num_joints: int) -> tuple[dict[str, str], list[str]]:
     elif num_joints == Labels.HALPE136.value:
         return {
             kpt: (
-                "label_body_keypoints" if idx < 17 else
+                "label_body_keypoints" if idx < 20 else
                 "label_foot_keypoints" if idx < 26 else
                 "label_face_keypoints" if idx < 95 else
-                "label_left_hand_keypoints" if idx < 116 else
+                "label_left_hand_keypoints" if idx < 115 else
                 "label_right_hand_keypoints"
             )
             for idx, kpt in enumerate(HALPE136_KEYPOINTS)

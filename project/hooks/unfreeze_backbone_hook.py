@@ -25,9 +25,4 @@ class StageUnfreezeHook(Hook):
             if hasattr(backbone, "_freeze_stages"):
                 backbone._freeze_stages()
 
-            for i, block in enumerate(backbone.layers):
-                requires_grad = (i >= self.frozen_stages)
-                for p in block.parameters():
-                    p.requires_grad = requires_grad
-
             self._done = True

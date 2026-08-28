@@ -1,4 +1,5 @@
 import gc
+import time
 
 from utils import make_rectanglelabels, make_keypointlabels, get_ls_fields
 from logger import get_logger
@@ -46,6 +47,11 @@ class MMPoseEstimator(object):
         self.logger = get_logger(__class__.__name__)
         self.logger.info(f"Loading '{checkpoint}' on {device}")
         self.pose_estimator = init_pose_estimator(config, checkpoint, device=device)
+
+        for i in range(-1, -len(self.pose_estimator.cfg.test_dataloader.dataset.pipeline) - 1, -1):
+            if self.pose_estimator.cfg.test_dataloader.dataset.pipeline[i]["type"] == "KeypointConverter":
+                self.pose_estimator.cfg.test_dataloader.dataset.pipeline.pop(i)
+
         self.logger.info("Initialization successfully completed")
 
     @torch.inference_mode()
@@ -65,6 +71,14 @@ class PoseEstimationModel(LabelStudioMLBase):
     score_thresh: float = float(os.getenv("SCORE_THRESHOLD", "0."))
     kpt_thresh: float = float(os.getenv("KPT_THRESHOLD", "0."))
     _device: str = os.getenv("DEVICE", "cuda:0")
+    min_bbox_area_ratio: float = float(os.getenv("MIN_BBOX_AREA_RATIO", "0.05"))
+
+    # How long predict() will wait for models to become ready before failing.
+    # Covers the race where an annotate request arrives right after
+    # Validate&Save while the (re)load is still running in the background.
+    _READY_WAIT_TIMEOUT_S: float = float(os.getenv("READY_WAIT_TIMEOUT_S", "120"))
+    _READY_POLL_INTERVAL_S: float = 0.5
+
     # Resolve paths at instance creation so they can be overridden via reload
     _pose_config: Path = Path(
         os.getenv("MMPOSE_CONFIG", f"{os.getcwd()}/models/mmpose/rtmw-x_8xb320-270e_cocktail14-384x288.py")
@@ -77,14 +91,25 @@ class PoseEstimationModel(LabelStudioMLBase):
     _model_lock = threading.Lock()
     logger = get_logger(__name__)
 
-    _is_ready: bool = False # True once models are loaded
-    _load_error: str | None = None # last error message if loading failed
+    _is_ready: bool = False  # True once models are loaded
+    _is_loading: bool = False  # True while a (re)load is in progress
+    _load_error: str | None = None  # last error message if loading failed
     _num_joints: int | None = None
 
-    def __init__(self, *args, **kwargs) -> None:
-        self._detector: YOLODetector | None = None
-        self._pose_estimator: MMPoseEstimator | None = None
+    # Which checkpoint set is actually loaded right now (to skip needless reloads)
+    _loaded_pose_config: Path | None = None
+    _loaded_pose_checkpoint: Path | None = None
+    _loaded_detector_checkpoint: Path | None = None
 
+    # IMPORTANT: the LS ML SDK creates a NEW instance of this class per
+    # request (setup() and predict() can run on different instances). All
+    # loaded-model state must therefore live on the CLASS, not on `self` —
+    # otherwise a fresh instance's predict() sees self._detector as None
+    # even though a model is already loaded and "ready" at the class level.
+    _detector: YOLODetector | None = None
+    _pose_estimator: MMPoseEstimator | None = None
+
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
     @classmethod
@@ -93,20 +118,42 @@ class PoseEstimationModel(LabelStudioMLBase):
         if cls._load_error:
             return "error"
 
+        if cls._is_loading:
+            return "loading"
+
         if cls._is_ready:
             return "ready"
 
         return "loading"
 
     def setup(self) -> None:
-        self.set("model_version", "1.0.0")
-        self._attempt_download()
-        # Eager load — models are ready before the first request
-        self._load_models(
-            pose_config=self._pose_config,
-            pose_checkpoint=self._pose_checkpoint,
-            detector_checkpoint=self._detector_checkpoint,
-        )
+        version = os.getenv("MODEL_VERSION", "v1.0.0")
+        self.set("model_version", version)
+
+        # IMPORTANT: do NOT block here. Label Studio calls setup() synchronously
+        # on Validate&Save with a short read-timeout (a few seconds), but
+        # downloading/loading YOLO + MMPose checkpoints onto the GPU can easily
+        # take longer than that. Blocking here is what causes
+        # "HTTPConnectionPool ... Read timed out" during Validate&Save.
+        #
+        # Kick the (re)load off in a background thread instead and return
+        # immediately. /health-ready (and predict(), see below) reflect the
+        # real state via _status / _is_ready / _load_error.
+        threading.Thread(target=self._background_setup, daemon=True).start()
+
+    def _background_setup(self) -> None:
+        try:
+            self._attempt_download()
+            self._load_models(
+                pose_config=self._pose_config,
+                pose_checkpoint=self._pose_checkpoint,
+                detector_checkpoint=self._detector_checkpoint,
+            )
+        except Exception as exc:
+            # _load_models already records _load_error, but guard here too in
+            # case _attempt_download raised before we ever got there.
+            PoseEstimationModel._load_error = PoseEstimationModel._load_error or str(exc)
+            self.logger.exception(f"Background setup failed: {exc}")
 
     def _attempt_download(self) -> None:
         with self._model_lock:
@@ -136,15 +183,15 @@ class PoseEstimationModel(LabelStudioMLBase):
 
     def _unload_models(self) -> None:
         self.logger.info("Try to unload previous models")
-        if self._detector is not None:
-            del self._detector.model
-            del self._detector
-            self._detector = None
+        if PoseEstimationModel._detector is not None:
+            del PoseEstimationModel._detector.model
+            del PoseEstimationModel._detector
+            PoseEstimationModel._detector = None
 
-        if self._pose_estimator is not None:
-            del self._pose_estimator.pose_estimator
-            del self._pose_estimator
-            self._pose_estimator = None
+        if PoseEstimationModel._pose_estimator is not None:
+            del PoseEstimationModel._pose_estimator.pose_estimator
+            del PoseEstimationModel._pose_estimator
+            PoseEstimationModel._pose_estimator = None
 
         gc.collect()
         if torch.cuda.is_available():
@@ -157,7 +204,22 @@ class PoseEstimationModel(LabelStudioMLBase):
         pose_checkpoint: Path,
         detector_checkpoint: Path,
     ) -> None:
+        # Skip reloading entirely if the exact same checkpoints are already
+        # loaded and ready. This avoids an unnecessary multi-second GPU reload
+        # (and the resulting "not ready" window) every time the labeling
+        # config is saved without actually changing any model files.
+        if (
+            PoseEstimationModel._is_ready
+            and not PoseEstimationModel._load_error
+            and PoseEstimationModel._loaded_pose_config == pose_config
+            and PoseEstimationModel._loaded_pose_checkpoint == pose_checkpoint
+            and PoseEstimationModel._loaded_detector_checkpoint == detector_checkpoint
+        ):
+            self.logger.info("Requested checkpoints already loaded — skipping reload")
+            return
+
         PoseEstimationModel._is_ready = False
+        PoseEstimationModel._is_loading = True
         PoseEstimationModel._load_error = None
 
         try:
@@ -165,10 +227,10 @@ class PoseEstimationModel(LabelStudioMLBase):
                 self._unload_models()
 
                 self.logger.info("Loading models")
-                self._detector = YOLODetector(
+                PoseEstimationModel._detector = YOLODetector(
                     detector_checkpoint.as_posix(), self._device, self.score_thresh
                 )
-                self._pose_estimator = MMPoseEstimator(
+                PoseEstimationModel._pose_estimator = MMPoseEstimator(
                     pose_config.as_posix(), pose_checkpoint.as_posix(), self._device
                 )
 
@@ -177,6 +239,10 @@ class PoseEstimationModel(LabelStudioMLBase):
                 self._pose_checkpoint = pose_checkpoint
                 self._detector_checkpoint = detector_checkpoint
 
+                PoseEstimationModel._loaded_pose_config = pose_config
+                PoseEstimationModel._loaded_pose_checkpoint = pose_checkpoint
+                PoseEstimationModel._loaded_detector_checkpoint = detector_checkpoint
+
             PoseEstimationModel._is_ready = True
             self.logger.info("Models successfully loaded and ready")
 
@@ -184,6 +250,8 @@ class PoseEstimationModel(LabelStudioMLBase):
             PoseEstimationModel._load_error = str(exc)
             self.logger.exception(f"Model loading failed: {exc}")
             raise
+        finally:
+            PoseEstimationModel._is_loading = False
 
     def reload_models(
         self,
@@ -225,9 +293,50 @@ class PoseEstimationModel(LabelStudioMLBase):
             "detector_checkpoint": str(new_detector_ckpt),
         }
 
+    def _wait_until_ready(self) -> None:
+        if PoseEstimationModel._is_ready:
+            return
+
+        deadline = time.monotonic() + self._READY_WAIT_TIMEOUT_S
+        while time.monotonic() < deadline:
+            if PoseEstimationModel._load_error:
+                raise RuntimeError(
+                    f"Model failed to load: {PoseEstimationModel._load_error}"
+                )
+            if PoseEstimationModel._is_ready:
+                return
+            time.sleep(self._READY_POLL_INTERVAL_S)
+
+        raise RuntimeError(
+            "Models are not ready yet after waiting "
+            f"{self._READY_WAIT_TIMEOUT_S}s. Check /health-ready and the "
+            "ML backend logs for status."
+        )
+
+    def _filter_small_bboxes(
+        self, bboxes: np.ndarray, img_w: int, img_h: int
+    ) -> np.ndarray:
+        if not len(bboxes):
+            return bboxes
+
+        image_area = float(img_w) * float(img_h)
+        widths = bboxes[:, 2] - bboxes[:, 0]
+        heights = bboxes[:, 3] - bboxes[:, 1]
+        areas = widths * heights
+        area_ratios = areas / image_area
+
+        keep_mask = area_ratios >= self.min_bbox_area_ratio
+        dropped = int(len(bboxes) - keep_mask.sum())
+        if dropped:
+            self.logger.debug(
+                f"Dropped {dropped} detection(s) smaller than "
+                f"{self.min_bbox_area_ratio * 100:.1f}% of image area "
+                f"(ratios: {[round(r, 4) for r in area_ratios[~keep_mask]]})"
+            )
+        return bboxes[keep_mask]
+
     def predict(self, tasks: list[dict[str, Any]], context: dict | None = None, **kwargs) -> ModelResponse:
-        if not PoseEstimationModel._is_ready:
-            raise RuntimeError("Models are not ready yet. Check /health-ready for status.")
+        self._wait_until_ready()
 
         predictions: list[PredictionValue] = []
         for task in tasks:
@@ -258,7 +367,15 @@ class PoseEstimationModel(LabelStudioMLBase):
         bboxes = self._detector.detect(image)
         self.logger.debug(f"Detected {len(bboxes)} persons")
         if not len(bboxes):
-            self.logger.debug("Doesn't found any joints, maybe you need to increase score threshold?")
+            self.logger.debug("No persons found — try lowering SCORE_THRESHOLD if this is unexpected.")
+            return PredictionValue(result=[], score=0.)
+
+        bboxes = self._filter_small_bboxes(bboxes, img_w, img_h)
+        if not len(bboxes):
+            self.logger.debug(
+                "All detections were smaller than "
+                f"{self.min_bbox_area_ratio * 100:.1f}% of the image area — nothing left to annotate."
+            )
             return PredictionValue(result=[], score=0.)
 
         keypoints, scores = self._pose_estimator.estimate(image, bboxes)

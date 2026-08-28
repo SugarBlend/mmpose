@@ -60,7 +60,9 @@ services:
       minio:
         condition: service_healthy
     environment:
-      ML_BACKEND_TIMEOUT: 30
+      ML_TIMEOUT_PREDICT: 1200
+      ML_TIMEOUT_SETUP: 10
+      ML_CONNECTION_TIMEOUT: 5
       DJANGO_DB: sqlite
       DEBUG: "true"
       LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK: "true"
@@ -81,6 +83,46 @@ services:
 #      - D:/:/data/local-files:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8081/health" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Reserve Label Studio for annotators. A backup service for people to access new
+  # data markup when hiring on an outsourced basis.
+  labelstudio_reserve:
+    image: heartexlabs/label-studio:latest
+    user: "0:0"
+    container_name: labelstudio_reserve
+    networks:
+      - mlops-net
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    command: label-studio start --host 0.0.0.0 --port 8083 --no-browser
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      ML_TIMEOUT_PREDICT: 1200
+      ML_TIMEOUT_SETUP: 10
+      ML_CONNECTION_TIMEOUT: 5
+      DJANGO_DB: sqlite
+      DEBUG: "true"
+      LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK: "true"
+      INACTIVITY_SESSION_TIMEOUT_ENABLED: 0
+      SSRF_PROTECTION_ENABLED: "true"
+      LOCAL_FILES_SERVING_ENABLED: "true"
+      LABEL_STUDIO_USERNAME: ${LABEL_STUDIO_USERNAME}
+      LABEL_STUDIO_PASSWORD: ${LABEL_STUDIO_PASSWORD}
+      # Label Studio searching MinIO by container name
+      MINIO_STORAGE_ENDPOINT_URL: http://minio:9000
+      MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ${LS_DATA_PATH}:/label-studio_reserve/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/health" ]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -110,8 +152,13 @@ services:
       - MMPOSE_CHECKPOINT=${MMPOSE_CHECKPOINT}
       - MMPOSE_CONFIG=${MMPOSE_CONFIG}
       - YOLO_MODEL=${YOLO_MODEL}
-      - DEVICE=${DEVICE:-cpu}
+      - DEVICE=${DEVICE:-cuda}
       - ALLOWED_LABEL_FIELDS=label_body_keypoints,label_foot_keypoints,label_left_hand_keypoints,label_right_hand_keypoints
+      - MIN_BBOX_AREA_RATIO=${MIN_BBOX_AREA_RATIO:-0.}
+      - SCORE_THRESHOLD=${SCORE_THRESHOLD:-0.}
+      - KPT_THRESHOLD=${KPT_THRESHOLD:-0.}
+      - READY_WAIT_TIMEOUT_S=${READY_WAIT_TIMEOUT_S:-120}
+      - MODEL_VERSION-${MODEL_VERSION:-v1.0.0}
     ports:
       - "${ML_BACKEND_PORT:-9090}:9090"
     depends_on:

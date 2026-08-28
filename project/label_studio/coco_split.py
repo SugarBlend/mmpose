@@ -16,12 +16,13 @@ logging.basicConfig(level=getattr(logging, os.getenv("LOG_LEVEL", default="INFO"
                     format="[%(levelname)s] %(message)s")
 
 
-def load_coco_files(annotations_dir: Path, pattern: str) -> tuple[list[dict], list[dict], list[dict]]:
-    compiler = re.compile(pattern)
-    json_files = [item for item in annotations_dir.glob("*.json") if compiler.search(item.name)]
+def load_coco_files(annotations_dir: Path, patterns: list[str]) -> tuple[list[dict], list[dict], list[dict]]:
+    compilers = [re.compile(pattern) for pattern in patterns.split(",")]
+    json_files = [item for item in annotations_dir.glob("*.json")
+                  if any(compiler.search(item.name) for compiler in compilers)]
 
     if not json_files:
-        raise FileNotFoundError(f"No JSON files found in '{annotations_dir}' with such seacrhing pattern: '{pattern}'")
+        raise FileNotFoundError(f"No JSON files found in '{annotations_dir}' with such searching pattern: '{patterns}'")
 
     all_images: list[dict] = []
     all_annotations: list[dict] = []
@@ -202,7 +203,7 @@ def build_coco_doc(
 
 
 def save_splits(
-    splits: dict[str, list[dict]],
+    splits: dict[str, list[dict[str, Any]]],
     all_annotations: list[dict],
     categories: list[dict],
     output_dir: Path,
@@ -273,9 +274,9 @@ def main() -> None:
         help="Random seed for reproducible shuffle (default: 42)",
     )
     parser.add_argument(
-        "--pattern",
+        "--patterns",
         type=str,
-        default="Pose Annotation*",
+        default="^Pose Annotation*,^Foots Pose Annotation*",
         help="Pattern string for searching by names in pool of annotation files",
     )
     parser.add_argument(
@@ -300,7 +301,7 @@ def main() -> None:
         parser.error(f"Not a directory: {annotations_dir}")
 
     # Run pipeline
-    images, annotations, categories = load_coco_files(annotations_dir, args.pattern)
+    images, annotations, categories = load_coco_files(annotations_dir, args.patterns)
     # IDs are already globally unique after load_coco_files — no separate reindex needed
 
     if args.split_mode == "projects":

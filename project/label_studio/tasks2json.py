@@ -230,9 +230,10 @@ class LSConverter(object):
         return tasks_json
 
     def process_annotations(self, output_dir: str = "outputs") -> None:
-        compiler = re.compile(args.name_pattern)
+        patterns = args.patterns.split(",")
+        compilers = [re.compile(pattern) for pattern in patterns]
         for project in self.client.projects.list().items:
-            if compiler.search(project.title):
+            if any(compiler.search(project.title) for compiler in compilers):
                 counter = project.total_annotations_number if args.data_type == "annotations" else project.total_predictions_number
                 if not counter:
                     logger.warning(f"Skip empty project: '{project.title}', doesn't detect any {args.data_type}.")
@@ -253,7 +254,7 @@ if __name__ == "__main__":
                         help="Folder to save COCO JSONs")
     # parser.add_argument("--name_pattern", default=".*",
     #                     help="Regular expression for filtering project by them name.")
-    parser.add_argument("--name_pattern", default="^Pose Annotation",
+    parser.add_argument("--patterns", default="^Pose Annotation,^Foots Pose Annotation",
                         help="Regular expression for filtering project by them name.")
     # parser.add_argument("--name_pattern", default=r"Hands\s\+\sBody Pose Annotation",
     #                     help="Regular expression for filtering project by them name.")

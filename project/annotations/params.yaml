@@ -28,7 +28,7 @@ datasets:
 
 
 convert:
-  search_pattern: ^Pose Annotation
+  search_patterns: ^Pose Annotation*,^Foots Pose Annotation*
   ls_output_folder: labelstudio_anns/halpe26
   user_output_folder: custom
 
