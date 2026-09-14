@@ -9,7 +9,13 @@ stages:
       size: 3540461100
       nfiles: 4
   fetch@aic:
-    cmd: mc mirror --max-workers 1 minio/datasets/AIC/annotations standard/aic
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/AIC/annotations'; dst = 'standard/aic'; os.makedirs(dst, 
+      exist_ok=True); r = subprocess.run(['mc', 'ls', '--json', src], 
+      capture_output=True, text=True, check=True); files = [json.loads(l)['key']
+      for l in r.stdout.splitlines() if l.strip() and json.loads(l).get('key', 
+      '').endswith('.json')]; [subprocess.run(['mc', 'cp', src.rstrip('/') + '/'
+      + f, dst], check=True) for f in files] "
     outs:
     - path: standard/aic
       hash: md5
@@ -17,8 +23,13 @@ stages:
       size: 608702372
       nfiles: 2
   fetch@coco:
-    cmd: mc mirror --max-workers 1 minio/datasets/Coco2017/annotations 
-      standard/coco
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/Coco2017/annotations'; dst = 'standard/coco'; 
+      os.makedirs(dst, exist_ok=True); r = subprocess.run(['mc', 'ls', '--json',
+      src], capture_output=True, text=True, check=True); files = 
+      [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and 
+      json.loads(l).get('key', '').endswith('.json')]; [subprocess.run(['mc', 
+      'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files] "
     outs:
     - path: standard/coco
       hash: md5
@@ -26,7 +37,13 @@ stages:
       size: 3540461100
       nfiles: 4
   fetch@cofw:
-    cmd: mc mirror --max-workers 1 minio/datasets/COFW/annotations standard/cofw
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/COFW/annotations'; dst = 'standard/cofw'; os.makedirs(dst,
+      exist_ok=True); r = subprocess.run(['mc', 'ls', '--json', src], 
+      capture_output=True, text=True, check=True); files = [json.loads(l)['key']
+      for l in r.stdout.splitlines() if l.strip() and json.loads(l).get('key', 
+      '').endswith('.json')]; [subprocess.run(['mc', 'cp', src.rstrip('/') + '/'
+      + f, dst], check=True) for f in files] "
     outs:
     - path: standard/cofw
       hash: md5
@@ -34,8 +51,13 @@ stages:
       size: 2779273
       nfiles: 2
   fetch@crowdpose:
-    cmd: mc mirror --max-workers 1 minio/datasets/CrowdPose/annotations 
-      standard/crowdpose
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/CrowdPose/annotations'; dst = 'standard/crowdpose'; 
+      os.makedirs(dst, exist_ok=True); r = subprocess.run(['mc', 'ls', '--json',
+      src], capture_output=True, text=True, check=True); files = 
+      [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and 
+      json.loads(l).get('key', '').endswith('.json')]; [subprocess.run(['mc', 
+      'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files] "
     outs:
     - path: standard/crowdpose
       hash: md5
@@ -43,8 +65,13 @@ stages:
       size: 121198844
       nfiles: 4
   fetch@halpe:
-    cmd: mc mirror --max-workers 1 minio/datasets/hico_20150920/annotations 
-      standard/halpe
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/hico_20150920/annotations'; dst = 'standard/halpe'; 
+      os.makedirs(dst, exist_ok=True); r = subprocess.run(['mc', 'ls', '--json',
+      src], capture_output=True, text=True, check=True); files = 
+      [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and 
+      json.loads(l).get('key', '').endswith('.json')]; [subprocess.run(['mc', 
+      'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files] "
     outs:
     - path: standard/halpe
       hash: md5
@@ -52,8 +79,13 @@ stages:
       size: 292970800
       nfiles: 2
   fetch@humanart:
-    cmd: mc mirror --max-workers 1 minio/datasets/HumanArt/annotations 
-      standard/humanart
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/HumanArt/annotations'; dst = 'standard/humanart'; 
+      os.makedirs(dst, exist_ok=True); r = subprocess.run(['mc', 'ls', '--json',
+      src], capture_output=True, text=True, check=True); files = 
+      [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and 
+      json.loads(l).get('key', '').endswith('.json')]; [subprocess.run(['mc', 
+      'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files] "
     outs:
     - path: standard/humanart
       hash: md5
@@ -61,17 +93,27 @@ stages:
       size: 919947288
       nfiles: 44
   fetch@interhand26m:
-    cmd: mc mirror --max-workers 1 minio/datasets/InterHand2.6M/annotations 
-      standard/interhand26m
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/InterHand2.6M/annotations'; dst = 'standard/interhand26m';
+      os.makedirs(dst, exist_ok=True); r = subprocess.run(['mc', 'ls', '--json',
+      src], capture_output=True, text=True, check=True); files = 
+      [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and 
+      json.loads(l).get('key', '').endswith('.json')]; [subprocess.run(['mc', 
+      'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files] "
     outs:
     - path: standard/interhand26m
       hash: md5
-      md5: 252c4ac7f6516e6a32a20efd90e2cc67.dir
-      size: 3239807475
-      nfiles: 30
+      md5: d751713988987e9331980363e24189ce.dir
+      size: 0
+      nfiles: 0
   fetch@jhmdb:
-    cmd: mc mirror --max-workers 1 minio/datasets/JHMDB/annotations 
-      standard/jhmdb
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/JHMDB/annotations'; dst = 'standard/jhmdb'; 
+      os.makedirs(dst, exist_ok=True); r = subprocess.run(['mc', 'ls', '--json',
+      src], capture_output=True, text=True, check=True); files = 
+      [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and 
+      json.loads(l).get('key', '').endswith('.json')]; [subprocess.run(['mc', 
+      'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files] "
     outs:
     - path: standard/jhmdb
       hash: md5
@@ -79,7 +121,13 @@ stages:
       size: 60929175
       nfiles: 6
   fetch@lapa:
-    cmd: mc mirror --max-workers 1 minio/datasets/LaPa/annotations standard/lapa
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/LaPa/annotations'; dst = 'standard/lapa'; os.makedirs(dst,
+      exist_ok=True); r = subprocess.run(['mc', 'ls', '--json', src], 
+      capture_output=True, text=True, check=True); files = [json.loads(l)['key']
+      for l in r.stdout.splitlines() if l.strip() and json.loads(l).get('key', 
+      '').endswith('.json')]; [subprocess.run(['mc', 'cp', src.rstrip('/') + '/'
+      + f, dst], check=True) for f in files] "
     outs:
     - path: standard/lapa
       hash: md5
@@ -87,7 +135,13 @@ stages:
       size: 97757553
       nfiles: 4
   fetch@mpii:
-    cmd: mc mirror --max-workers 1 minio/datasets/MPII/annotations standard/mpii
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/MPII/annotations'; dst = 'standard/mpii'; os.makedirs(dst,
+      exist_ok=True); r = subprocess.run(['mc', 'ls', '--json', src], 
+      capture_output=True, text=True, check=True); files = [json.loads(l)['key']
+      for l in r.stdout.splitlines() if l.strip() and json.loads(l).get('key', 
+      '').endswith('.json')]; [subprocess.run(['mc', 'cp', src.rstrip('/') + '/'
+      + f, dst], check=True) for f in files] "
     outs:
     - path: standard/mpii
       hash: md5
@@ -95,8 +149,13 @@ stages:
       size: 76728721
       nfiles: 4
   fetch@ochuman:
-    cmd: mc mirror --max-workers 1 minio/datasets/OCHuman/annotations 
-      standard/ochuman
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/OCHuman/annotations'; dst = 'standard/ochuman'; 
+      os.makedirs(dst, exist_ok=True); r = subprocess.run(['mc', 'ls', '--json',
+      src], capture_output=True, text=True, check=True); files = 
+      [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and 
+      json.loads(l).get('key', '').endswith('.json')]; [subprocess.run(['mc', 
+      'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files] "
     outs:
     - path: standard/ochuman
       hash: md5
@@ -104,16 +163,27 @@ stages:
       size: 72811598
       nfiles: 3
   fetch@ubody:
-    cmd: mc mirror --max-workers 1 minio/datasets/UBody/annotations 
-      standard/ubody
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/UBody/annotations'; dst = 'standard/ubody'; 
+      os.makedirs(dst, exist_ok=True); r = subprocess.run(['mc', 'ls', '--json',
+      src], capture_output=True, text=True, check=True); files = 
+      [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and 
+      json.loads(l).get('key', '').endswith('.json')]; [subprocess.run(['mc', 
+      'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files] "
     outs:
     - path: standard/ubody
       hash: md5
-      md5: 7b868554a069b2ca7ba079a18ec7bb46.dir
-      size: 24765292584
-      nfiles: 62
+      md5: 0cdef5acad65119d7babcc8f0d09bbf6.dir
+      size: 3000128767
+      nfiles: 2
   fetch@wflw:
-    cmd: mc mirror --max-workers 1 minio/datasets/WFLW/annotations standard/wflw
+    cmd: python -c "import subprocess, os, json; src = 
+      'minio/datasets/WFLW/annotations'; dst = 'standard/wflw'; os.makedirs(dst,
+      exist_ok=True); r = subprocess.run(['mc', 'ls', '--json', src], 
+      capture_output=True, text=True, check=True); files = [json.loads(l)['key']
+      for l in r.stdout.splitlines() if l.strip() and json.loads(l).get('key', 
+      '').endswith('.json')]; [subprocess.run(['mc', 'cp', src.rstrip('/') + '/'
+      + f, dst], check=True) for f in files] "
     outs:
     - path: standard/wflw
       hash: md5
@@ -122,40 +192,42 @@ stages:
       nfiles: 8
   convert_ls_to_coco:
     cmd: "python ../label_studio/tasks2json.py --root-dataset-path s3://datasets --output_folder
-      labelstudio_anns/halpe26\n"
+      labelstudio_anns/halpe26 --patterns \"^Pose Annotation*,^Foots Pose Annotation*\"\
+      \n"
     deps:
     - path: ../label_studio/tasks2json.py
       hash: md5
-      md5: e55ebb3b001e47d0203de1a36ffb6b84
-      size: 11570
+      md5: 96b0af222be0e3905061f8820d9564a6
+      size: 11949
     params:
       params.yaml:
         convert.ls_output_folder: labelstudio_anns/halpe26
-        convert.search_pattern: ^Pose Annotation
+        convert.search_patterns: ^Pose Annotation*,^Foots Pose Annotation*
     outs:
     - path: labelstudio_anns/halpe26
       hash: md5
-      md5: 47ae96f68638dee9c99fac2c62b96c86.dir
-      size: 8509393
-      nfiles: 14
+      md5: 0296cd1e681b2f8b3a540df060521dd9.dir
+      size: 9761397
+      nfiles: 18
   split_coco:
     cmd: "python ../label_studio/coco_split.py  --annotations_dir labelstudio_anns/halpe26\
       \  --output_dir custom  --train_ratio 0.7  --val_ratio 0.2  --test_ratio 0.1\
-      \  --seed 42  --pattern \"^Pose Annotation\" --split_mode images\n"
+      \  --seed 42  --patterns \"^Pose Annotation*,^Foots Pose Annotation*\" --split_mode
+      images\n"
     deps:
     - path: ../label_studio/coco_split.py
       hash: md5
-      md5: 5fa7839e81d804117f0e653271dcbfda
-      size: 10381
+      md5: 3c756c10ddf9077921003b5999bc814a
+      size: 10829
     - path: labelstudio_anns/halpe26
       hash: md5
-      md5: 47ae96f68638dee9c99fac2c62b96c86.dir
-      size: 8509393
-      nfiles: 14
+      md5: 0296cd1e681b2f8b3a540df060521dd9.dir
+      size: 9761397
+      nfiles: 18
     params:
       params.yaml:
         convert.ls_output_folder: labelstudio_anns/halpe26
-        convert.search_pattern: ^Pose Annotation
+        convert.search_patterns: ^Pose Annotation*,^Foots Pose Annotation*
         convert.user_output_folder: custom
         split.mode: images
         split.seed: 42
@@ -165,13 +237,13 @@ stages:
     outs:
     - path: custom/test.json
       hash: md5
-      md5: a7f554a7f64a40c938ddbbdc3adaee7b
-      size: 852830
+      md5: 903962f39e92224419e1e0d626ef171e
+      size: 1006662
     - path: custom/train.json
       hash: md5
-      md5: d1c496ea0a7732404a6f89f61cfd665b
-      size: 5952266
+      md5: e24cb7869a020c77ce8f2e44ee174912
+      size: 6797886
     - path: custom/val.json
       hash: md5
-      md5: 9f1d0d90d779aed84c59b4ad0072a34c
-      size: 1702182
+      md5: 0ce15667963bd05aacdac8b06d0d919a
+      size: 1952500

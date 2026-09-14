@@ -3,6 +3,7 @@ import tkinter as tk
 from project.visualizers.space.constants import W
 from project.visualizers.space.models import DrawParams, ImageEntry
 from project.visualizers.space.widgets.view_group import ViewGroup
+from project.visualizers.space.zoom import ZoomState, bind_zoom_pan
 
 
 class GroupPanel(tk.Frame):
@@ -14,6 +15,9 @@ class GroupPanel(tk.Frame):
         self.group = group
         self.controller = controller
 
+        # Zoom/pan state, own to this panel, persists frame to frame.
+        self.zoom = ZoomState()
+
         self.font = "Comic Sans MS"
         self.canvas = tk.Canvas(self, bg=W["canvas"], highlightthickness=0, cursor="crosshair")
         self.canvas.pack(fill=tk.BOTH, expand=True)
@@ -23,6 +27,7 @@ class GroupPanel(tk.Frame):
 
         self.canvas.bind("<Double-Button-1>", self._on_dbl_click)
         self.canvas.bind("<Button-3>", self._on_right_click)
+        bind_zoom_pan(self.canvas, self.zoom, self._on_zoom_change)
 
     def _on_dbl_click(self, _) -> None:
         self.controller.expand_group(self.group)
@@ -30,12 +35,17 @@ class GroupPanel(tk.Frame):
     def _on_right_click(self, _) -> None:
         self.controller.collapse_group()
 
+    def _on_zoom_change(self) -> None:
+        # Redraw just this panel for responsiveness instead of re-laying out
+        # and redrawing the whole grid on every wheel tick / drag step.
+        self.draw(self.controller._make_dp())
+
     def draw(self, dp: DrawParams) -> None:
         cw = max(self.canvas.winfo_width(), 100)
         ch = max(self.canvas.winfo_height(), 100)
         self.canvas.delete("all")
 
-        photo = self.group.render(cw, ch, dp)
+        photo = self.group.render(cw, ch, dp, zoom_state=self.zoom)
         if photo is None:
             if not self.group.loader.directory:
                 msg = "Folder with images doesn't chose"

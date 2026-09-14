@@ -114,6 +114,27 @@ def fit_image(iw: int, ih: int, cw: int, ch: int) -> tuple[int, int]:
     return max(1, int(ch * iw / ih)), ch
 
 
+def crop_to_zoom(img: np.ndarray, zoom_state) -> np.ndarray:
+    if zoom_state is None or zoom_state.is_default:
+        return img
+    oh, ow = img.shape[:2]
+    x0, y0, x1, y1 = zoom_state.crop_rect(ow, oh)
+    return img[y0:y1, x0:x1]
+
+
+def resize_for_canvas(
+    img_rgb: np.ndarray, cw: int, ch: int, zoom_state=None
+) -> tuple[np.ndarray, int, int, int, int]:
+    img_rgb = crop_to_zoom(img_rgb, zoom_state)
+    oh, ow = img_rgb.shape[:2]
+    nw, nh = fit_image(ow, oh, cw, ch)
+    resized = resize(img_rgb, nw, nh)
+    dx, dy = (cw - nw) // 2, (ch - nh) // 2
+    if zoom_state is not None:
+        zoom_state.set_display_rect(dx, dy, nw, nh)
+    return resized, dx, dy, nw, nh
+
+
 def resize(img_rgb: np.ndarray, nw: int, nh: int) -> np.ndarray:
     if USE_CUDA and nw * nh < img_rgb.shape[0] * img_rgb.shape[1]:
         try:

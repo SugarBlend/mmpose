@@ -2,7 +2,16 @@ stages:
   fetch:
     foreach: ${datasets}
     do:
-      cmd: mc mirror --max-workers 1 minio/${item.ann_relative_path} standard/${key}
+      cmd: >-
+        python -c
+        "import subprocess, os, json;
+        src = 'minio/${item.ann_relative_path}';
+        dst = 'standard/${key}';
+        os.makedirs(dst, exist_ok=True);
+        r = subprocess.run(['mc', 'ls', '--json', src], capture_output=True, text=True, check=True);
+        files = [json.loads(l)['key'] for l in r.stdout.splitlines() if l.strip() and json.loads(l).get('key', '').endswith('.json')];
+        [subprocess.run(['mc', 'cp', src.rstrip('/') + '/' + f, dst], check=True) for f in files]
+        "
       outs:
         - standard/${key}:
             cache: false

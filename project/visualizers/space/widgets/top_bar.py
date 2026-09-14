@@ -372,6 +372,9 @@ class TopBar(tk.Frame):
             ("Esc", "Exit from FS"),
             ("LMB ×2", "Expand panel (groups mode)"),
             ("RMB", "Back to grid"),
+            ("Ctrl + Wheel", "Zoom in / out at cursor"),
+            ("MMB drag", "Pan when zoomed in"),
+            ("Ctrl + 0", "Reset zoom"),
         ]:
             row = tk.Frame(frame, bg=bg)
             row.pack(fill=tk.X, pady=2)

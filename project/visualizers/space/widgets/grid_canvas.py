@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 
 from project.visualizers.space.constants import W
-from project.visualizers.space.drawing import resize, draw_frame, fit_image, outlined, rgb_to_photoimage
+from project.visualizers.space.drawing import resize, resize_for_canvas, draw_frame, fit_image, outlined, rgb_to_photoimage
 from project.visualizers.space.models import DrawParams
 from project.visualizers.space.widgets.group_panel import GroupPanel
 from project.visualizers.space.widgets.view_group import ViewGroup
@@ -113,9 +113,9 @@ class GridCanvas(tk.Frame):
         sizes: List[Tuple[int, int]] = [(max(p.canvas.winfo_width(), 100),
                                          max(p.canvas.winfo_height(), 100)) for p in panels]
 
-        np_results: List[Optional[np.ndarray]] = [None] * n
+        np_results: List[Optional[Tuple[np.ndarray, int, int]]] = [None] * n
 
-        def render_numpy(i: int, group: ViewGroup, cw: int, ch: int) -> None:
+        def render_numpy(i: int, group: ViewGroup, cw: int, ch: int, zoom_state) -> None:
             try:
                 entry = group.current_entry()
                 if entry is None:
@@ -136,14 +136,17 @@ class GridCanvas(tk.Frame):
                         pass
                     outlined(img, group.cfg.name, (10, oh - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
                              (255, 220, 80), 1)
-                nw, nh = fit_image(ow, oh, cw, ch)
-                resized = resize(img, nw, nh)
-                np_results[i] = resized
+                resized, dx, dy, _nw, _nh = resize_for_canvas(img, cw, ch, zoom_state)
+                np_results[i] = (resized, dx, dy)
             except Exception:
                 pass
 
         threads: List[threading.Thread] = [
-            threading.Thread(target=render_numpy, args=(i, panels[i].group, sizes[i][0], sizes[i][1]), daemon=True)
+            threading.Thread(
+                target=render_numpy,
+                args=(i, panels[i].group, sizes[i][0], sizes[i][1], panels[i].zoom),
+                daemon=True,
+            )
             for i in range(n)
         ]
         for t in threads:
@@ -154,17 +157,17 @@ class GridCanvas(tk.Frame):
         # update canvas
         for i, panel in enumerate(panels):
             cw, ch = sizes[i]
-            arr = np_results[i]
+            result = np_results[i]
             panel.canvas.delete("all")
-            if arr is None:
+            if result is None:
                 msg = "Folder with images doesn't chose" if not panel.group.loader.directory else "File not found"
                 panel.canvas.create_text(cw // 2, ch // 2, text=msg, fill="#555",
                                          font=("Comic Sans MS", 11), justify="center")
             else:
-                nh, nw = arr.shape[:2]
+                arr, dx, dy = result
                 photo = rgb_to_photoimage(arr)
                 panel.group._photo = photo
-                panel.canvas.create_image((cw - nw) // 2, (ch - nh) // 2, anchor="nw", image=photo)
+                panel.canvas.create_image(dx, dy, anchor="nw", image=photo)
 
             t_total = panel.group.total()
             panel._overlay.config(text=f"{panel.group._idx + 1}/{t_total}" if t_total else "0/0")

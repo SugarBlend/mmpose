@@ -6,9 +6,8 @@ from PIL import ImageTk
 import numpy as np
 
 from project.visualizers.space.drawing import (
-    resize,
+    resize_for_canvas,
     draw_frame,
-    fit_image,
     outlined,
     rgb_to_photoimage,
 )
@@ -61,7 +60,7 @@ class ViewGroup:
         t = self.total()
         return max(0, min(i, t - 1)) if t else 0
 
-    def render(self, cw: int, ch: int, dp: DrawParams) -> Optional[ImageTk.PhotoImage]:
+    def render(self, cw: int, ch: int, dp: DrawParams, zoom_state=None) -> Optional[ImageTk.PhotoImage]:
         entry = self.current_entry()
         if entry is None:
             return None
@@ -88,8 +87,7 @@ class ViewGroup:
             outlined(img, self.cfg.name, (10, oh - 10),
                      cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 220, 80), 1)
 
-        nw, nh = fit_image(ow, oh, cw, ch)
-        resized: np.ndarray = resize(img, nw, nh)
+        resized, dx, dy, nw, nh = resize_for_canvas(img, cw, ch, zoom_state)
         photo: ImageTk.PhotoImage = rgb_to_photoimage(resized)
 
         self._photo = photo

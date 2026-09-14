@@ -56,7 +56,9 @@ class LSConverter(object):
                 logger.debug(f"No {args.data_type} for project: '{project_name}', task {pb.n}, '{task['data']['image']}'")
                 continue
 
-            for annotation in task[args.data_type]:
+            # if annotations more than one, take the last created
+            sorted_annotations = sorted(task[args.data_type], key=lambda a: a["updated_at"])
+            for annotation in sorted_annotations[-1:]:
                 if annotation.get("was_cancelled"):
                     logger.debug(f"Skipping cancelled annotation for task {pb.n}, '{image_name}'")
                     continue

@@ -11,8 +11,9 @@ from models import DrawParams, FilterParams, ImageEntry, ViewGroupConfig
 from services import DataService, ImageLoader, TrackBuilder
 from widgets.view_group import ViewGroup
 from style import apply_style, hsep
-from drawing import draw_frame, fit_image, resize, rgb_to_photoimage, outlined
+from drawing import draw_frame, resize_for_canvas, rgb_to_photoimage, outlined
 from widgets import TopBar, PlayerBar, InfoPanel, GridCanvas, GroupManagerDialog
+from zoom import ZoomState, bind_zoom_pan
 
 
 class AppController:
@@ -41,6 +42,9 @@ class AppController:
         self._layout_in_progress = False
         self._photo = None
         self._slider_updating = False
+
+        # Zoom/pan state for the single-view canvas (persists frame to frame).
+        self.zoom = ZoomState()
 
         apply_style(root)
         root.configure(bg=W["bg"])
@@ -91,6 +95,7 @@ class AppController:
         self.canvas.pack(fill=tk.BOTH, expand=True)
         self.canvas.bind("<Double-Button-3>", lambda e: self.toggle_fullscreen())
         self.canvas.bind("<Configure>", self._on_canvas_resize)
+        bind_zoom_pan(self.canvas, self.zoom, self.refresh)
 
         # Grid mode canvas
         self.grid_canvas = GridCanvas(top_wrap, self)
@@ -110,8 +115,20 @@ class AppController:
         self.root.bind("<space>", self.toggle_play)
         self.root.bind("<F11>", self.toggle_fullscreen)
         self.root.bind("<Escape>", self.exit_fullscreen)
+        self.root.bind("<Control-Key-0>", lambda event: self.reset_zoom())
         self.root.bind("<Configure>", self._on_resize)
         self.root.focus_set()
+
+    def reset_zoom(self) -> None:
+        if self._is_grid_mode():
+            if self.grid_canvas._expanded is not None:
+                self.grid_canvas._expanded.zoom.reset()
+            else:
+                for panel in self.grid_canvas.get_panels():
+                    panel.zoom.reset()
+        else:
+            self.zoom.reset()
+        self.refresh()
 
     def _is_grid_mode(self) -> bool:
         return self.view_groups is not None and len(self.view_groups) > 0
@@ -554,7 +571,6 @@ class AppController:
             except ValueError:
                 pass
 
-        nw, nh = fit_image(ow, oh, cw, ch)
-        resized = resize(img, nw, nh)
+        resized, dx, dy, nw, nh = resize_for_canvas(img, cw, ch, self.zoom)
         self._photo = rgb_to_photoimage(resized)
-        canvas.create_image((cw - nw) // 2, (ch - nh) // 2, anchor=tk.NW, image=self._photo)
+        canvas.create_image(dx, dy, anchor=tk.NW, image=self._photo)
