@@ -1,3 +1,10 @@
+project/annotations/standard/
+project/annotations/detection/
+project/annotations/custom/
+project/annotations/labelstudio/
+project/annotations/labelstudio_anns/
+project/annotations/labelstudio_preds/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
