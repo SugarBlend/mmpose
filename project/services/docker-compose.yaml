@@ -30,8 +30,8 @@ services:
       - mlops-net
     restart: unless-stopped
     ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # Web Console
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -44,6 +44,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-4}"
+          memory: "${MEMORY_LIMIT:-12G}"
 
   # Label Studio
   labelstudio:
@@ -54,7 +59,7 @@ services:
       - mlops-net
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "${LABELSTUDIO_PORT:-8081}:8081"
     command: label-studio start --host 0.0.0.0 --port 8081 --no-browser
     depends_on:
       minio:
@@ -87,18 +92,23 @@ services:
       timeout: 10s
       retries: 10
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-1}"
+          memory: "${MEMORY_LIMIT:-2048M}"
 
   # Reserve Label Studio for annotators. A backup service for people to access new
   # data markup when hiring on an outsourced basis.
-  labelstudio_reserve:
+  labelstudio-reserve:
     image: heartexlabs/label-studio:latest
     user: "0:0"
-    container_name: labelstudio_reserve
+    container_name: labelstudio-reserve
     networks:
       - mlops-net
     restart: unless-stopped
     ports:
-      - "8083:8083"
+      - "${LABELSTUDIO_RESERVE_PORT:-8083}:8083"
     command: label-studio start --host 0.0.0.0 --port 8083 --no-browser
     depends_on:
       minio:
@@ -120,13 +130,18 @@ services:
       MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
     volumes:
-      - ${LS_DATA_PATH}:/label-studio_reserve/data
+      - ${LS_DATA_PATH_RESERVE}:/label-studio/data
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8083/health" ]
       interval: 15s
       timeout: 10s
       retries: 10
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-1}"
+          memory: "${MEMORY_LIMIT:-2048M}"
 
   # Label Studio auto labeling
   ml-backend:
@@ -176,7 +191,7 @@ services:
       resources:
         limits:
           cpus: "${CPU_LIMIT:-4}"
-          memory: "${MEMORY_LIMIT:-10240M}"
+          memory: "${MEMORY_LIMIT:-2048M}"
         reservations:
           cpus: "${CPU_RESERVATION:-1}"
           memory: "${MEMORY_RESERVATION:-2048M}"
@@ -197,7 +212,7 @@ services:
       - mlops-net
     restart: unless-stopped
     ports:
-      - "8082:8082"
+      - "${MLFLOW_PORT:-8082}:8082"
     depends_on:
       minio:
         condition: service_healthy
@@ -224,6 +239,11 @@ services:
       timeout: 10s
       retries: 10
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-1}"
+          memory: "${MEMORY_LIMIT:-4096M}"
 
 networks:
   mlops-net:
