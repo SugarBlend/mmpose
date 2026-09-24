@@ -5,7 +5,7 @@ from deploy2serve.deployment.projects.sapiens.utils.palettes import (COCO_SKELET
 from project.services.ml_backend.utils import (_HANDS_KEYPOINTS, HALPE26_KEYPOINTS, COCO133_KEYPOINTS,
                                                COCO17_KEYPOINTS, HALPE136_KEYPOINTS, _FEETS_KEYPOINTS)
 from project.label_studio.palettes import (COCO_HALPE26_KPTS_COLORS, COCO_HALPE26_SKELETON_INFO, HANDS21_SKELETON_INFO,
-                                           HANDS21_KPTS_COLORS)
+                                           HANDS21_KPTS_COLORS, COCO_HALPE136_KPTS_COLORS, COCO_HALPE136_SKELETON_INFO)
 from dataclasses import dataclass, field
 
 Color = tuple[int, int, int]  # BGR
@@ -65,6 +65,17 @@ CATEGORY_HALPE26 = KeypointCategory(
     },
 )
 
+CATEGORY_HALPE136 = KeypointCategory(
+    num_keypoints=136,
+    keypoints=HALPE136_KEYPOINTS,
+    name="person",
+    kpt_colors=COCO_HALPE136_KPTS_COLORS,
+    skeleton={
+        k: SkeletonLink(id=v["id"], link=v["link"], color=v["color"])
+        for k, v in COCO_HALPE136_SKELETON_INFO.items()
+    },
+)
+
 CATEGORY_COCO17 = KeypointCategory(
     num_keypoints=17,
     keypoints=COCO17_KEYPOINTS,
@@ -102,5 +113,6 @@ structs = {
     21: CATEGORY_HAND21,
     26: CATEGORY_HALPE26,
     133: CATEGORY_COCO133,
+    136: CATEGORY_HALPE136,
     308: CATEGORY_GOLIATH308
 }

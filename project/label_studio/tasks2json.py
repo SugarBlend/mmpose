@@ -33,7 +33,14 @@ class LSConverter(object):
         root = ET.fromstring(config_path)
         return [label.get("value") for label in root.findall(".//KeyPointLabels/Label")]
 
-    def tasks2json(self, tasks, project_name, output_dir="outputs"):
+    def tasks2json(
+        self,
+        tasks: list[dict[str, Any]],
+        project_name: str,
+        data_type: str,
+        root_dataset_path: str,
+        output_dir: str = "outputs"
+    ) -> Path:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -46,19 +53,33 @@ class LSConverter(object):
         label_order = {name: i for i, name in enumerate(self.label_values)}
 
         seen_image_ids: set[int] = set()
+        users: dict[str, int] = {}
 
         pb = tqdm(total=len(tasks), desc="Progress", leave=True, ncols=80, unit="task")
         for task in tasks:
-            image_name = Path(unquote(task["data"]["image"])).relative_to(args.root_dataset_path).as_posix()
+            image_name = Path(unquote(task["data"]["image"])).relative_to(root_dataset_path).as_posix()
             image_id = task["id"]
 
-            if not task.get(args.data_type):
-                logger.debug(f"No {args.data_type} for project: '{project_name}', task {pb.n}, '{task['data']['image']}'")
+            if not task.get(data_type):
+                logger.debug(f"No {data_type} for project: '{project_name}', task {pb.n}, '{task['data']['image']}'")
                 continue
 
             # if annotations more than one, take the last created
-            sorted_annotations = sorted(task[args.data_type], key=lambda a: a["updated_at"])
+            sorted_annotations = sorted(task[data_type], key=lambda a: a["updated_at"])
+
+            if len(sorted_annotations) > 1:
+                logger.info(f"Number of existed annotations is {len(sorted_annotations)}, will used last created at: "
+                            f"{sorted_annotations[-1]['created_at']}")
+
             for annotation in sorted_annotations[-1:]:
+
+                if 'completed_by' in annotation:
+                    upd_user = self.client.users.get(annotation["completed_by"]).email
+                    if upd_user not in users:
+                        users[upd_user] = 1
+                    else:
+                        users[upd_user] += 1
+
                 if annotation.get("was_cancelled"):
                     logger.debug(f"Skipping cancelled annotation for task {pb.n}, '{image_name}'")
                     continue
@@ -133,6 +154,7 @@ class LSConverter(object):
                     self.process_polygon(label, annotations)
             pb.update()
 
+        users: list[str] = [k for k, v in sorted(users.items(), key=lambda x: x[1], reverse=True)]
         description = {
             "images": images,
             "categories": [{"id": 1, "name": "person"}],
@@ -141,7 +163,7 @@ class LSConverter(object):
                 "year": datetime.now().year,
                 "version": "1.0",
                 "description": f'Converted from Label Studio project {project_name}',
-                "contributor": 'LSConverter',
+                "contributor": ','.join(users),
                 "date_created": str(datetime.now())
             }
         }
@@ -245,7 +267,8 @@ class LSConverter(object):
                 # Fetch label config directly from project settings
                 self.label_values = self._parse_labels(project.label_config)
                 tasks = self._export_project_annotations(project.id)
-                self.tasks2json(tasks, project.title, output_dir)
+                self.tasks2json(tasks, project.title, data_type=args.data_type,
+                                root_dataset_path=args.root_dataset_path, output_dir=output_dir)
 
 
 if __name__ == "__main__":

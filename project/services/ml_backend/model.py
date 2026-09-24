@@ -1,9 +1,18 @@
+import torch
+
+def _patched_torch_load(*args, **kwargs) -> Any:
+    kwargs.setdefault("weights_only", False)
+    return _orig_torch_load(*args, **kwargs)
+
+
+_orig_torch_load = torch.load
+torch.load = _patched_torch_load
+
 import gc
 import time
 
 from utils import make_rectanglelabels, make_keypointlabels, get_ls_fields
 from logger import get_logger
-import torch
 from typing import Any
 
 import os

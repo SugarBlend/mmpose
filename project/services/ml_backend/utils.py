@@ -1,17 +1,7 @@
-import torch
 from typing import Any
 import numpy as np
 import uuid
 from enum import Enum
-
-
-def _patched_torch_load(*args, **kwargs) -> Any:
-    kwargs.setdefault("weights_only", False)
-    return _orig_torch_load(*args, **kwargs)
-
-
-_orig_torch_load = torch.load
-torch.load = _patched_torch_load
 
 
 class Labels(Enum):
@@ -115,7 +105,7 @@ def get_ls_fields(num_joints: int) -> tuple[dict[str, str], list[str]]:
             kpt: (
                 "label_body_keypoints" if idx < 20 else
                 "label_foot_keypoints" if idx < 26 else
-                "label_face_keypoints" if idx < 95 else
+                "label_face_keypoints" if idx < 94 else
                 "label_left_hand_keypoints" if idx < 115 else
                 "label_right_hand_keypoints"
             )
