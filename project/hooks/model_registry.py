@@ -44,9 +44,9 @@ class MLflowModelRegistryHook(Hook):
         git_tag = sh("git tag --points-at HEAD") or "no-tag"
         git_dataset_tag = sh("git tag --list 'dataset/v*' --sort=-version:refname | head -1") or "unknown"
 
-        split_dvc_path = "project/annotations/split.dvc"
-        split_md5 = load_dvc_md5(split_dvc_path)
-        split_dir = Path("project/annotations/split")
+        # split_dvc_path = "project/annotations/split.dvc"
+        # split_md5 = load_dvc_md5(split_dvc_path)
+        split_dir = Path("project/annotations/custom")
 
         stats = {}
         total_images = 0
@@ -72,7 +72,7 @@ class MLflowModelRegistryHook(Hook):
             "git.commit_short": git_commit_short,
             "git.branch": git_branch,
             "git.tag": git_tag,
-            "dvc.split_md5": split_md5,
+            # "dvc.split_md5": split_md5,
             "dataset.version": git_dataset_tag,
             "dataset.train_images": stats.get("train", {}).get("images", 0),
             "dataset.train_annotations": stats.get("train", {}).get("annotations", 0),

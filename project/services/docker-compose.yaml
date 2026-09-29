@@ -15,9 +15,10 @@ services:
     entrypoint: >
       /bin/sh -c "
         mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-        mc mb --ignore-existing local/mlflow-artifacts;
-        mc mb --ignore-existing local/datasets;
-        mc anonymous set download local/datasets;
+        for b in mlflow-artifacts datasets; do
+          mc mb --ignore-existing local/$$b;
+          mc anonymous set none local/$$b;
+        done;
         echo 'MinIO buckets ready';
       "
 
@@ -47,12 +48,12 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "${CPU_LIMIT:-4}"
-          memory: "${MEMORY_LIMIT:-12G}"
+          cpus: "${MINIO_CPU_LIMIT:-4}"
+          memory: "${MINIO_MEMORY_LIMIT:-12G}"
 
   # Label Studio
   labelstudio:
-    image: heartexlabs/label-studio:latest
+    image: label-studio:skeleton-lines-1.23.1
     user: "0:0"
     container_name: labelstudio
     networks:
@@ -81,6 +82,7 @@ services:
       MINIO_STORAGE_ENDPOINT_URL: http://minio:9000
       MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      USE_DEFAULT_BANNED_SUBNETS: "false"
     volumes:
       # for ubuntu
       - ${LS_DATA_PATH}:/label-studio/data
@@ -95,13 +97,13 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "${CPU_LIMIT:-1}"
-          memory: "${MEMORY_LIMIT:-2048M}"
+          cpus: "${LS_CPU_LIMIT:-1}"
+          memory: "${LS_MEMORY_LIMIT:-2048M}"
 
   # Reserve Label Studio for annotators. A backup service for people to access new
-  # data markup when hiring on an outsourced basis.
+  # data markup when hiring on an outsourced basis. For candidates test only
   labelstudio-reserve:
-    image: heartexlabs/label-studio:latest
+    image: label-studio:skeleton-lines-1.23.1
     user: "0:0"
     container_name: labelstudio-reserve
     networks:
@@ -129,6 +131,7 @@ services:
       MINIO_STORAGE_ENDPOINT_URL: http://minio:9000
       MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      USE_DEFAULT_BANNED_SUBNETS: "false"
     volumes:
       - ${LS_DATA_PATH_RESERVE}:/label-studio/data
     healthcheck:
@@ -140,8 +143,54 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "${CPU_LIMIT:-1}"
-          memory: "${MEMORY_LIMIT:-2048M}"
+          cpus: "${LS_CPU_LIMIT:-1}"
+          memory: "${LS_MEMORY_LIMIT:-2048M}"
+
+  # Reserve Label Studio for annotators. A backup service for people to access new
+  # data markup when hiring on an outsourced basis. For big data labeling final candidates
+  labelstudio-outsource:
+    image: label-studio:skeleton-lines-1.23.1
+    user: "0:0"
+    container_name: labelstudio-outsource
+    networks:
+      - mlops-net
+    restart: unless-stopped
+    ports:
+      - "${LABELSTUDIO_OUTSOURCE_PORT:-8084}:8084"
+    command: label-studio start --host 0.0.0.0 --port 8084 --no-browser
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      ML_TIMEOUT_PREDICT: 1200
+      ML_TIMEOUT_SETUP: 10
+      ML_CONNECTION_TIMEOUT: 5
+      DJANGO_DB: sqlite
+      DEBUG: "true"
+      LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK: "true"
+      INACTIVITY_SESSION_TIMEOUT_ENABLED: 0
+      SSRF_PROTECTION_ENABLED: "true"
+      LOCAL_FILES_SERVING_ENABLED: "true"
+      LABEL_STUDIO_USERNAME: ${LABEL_STUDIO_USERNAME}
+      LABEL_STUDIO_PASSWORD: ${LABEL_STUDIO_PASSWORD}
+      # Label Studio searching MinIO by container name
+      MINIO_STORAGE_ENDPOINT_URL: http://minio:9000
+      MINIO_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      USE_DEFAULT_BANNED_SUBNETS: "false"
+    volumes:
+      - ${LS_DATA_PATH_OUTSOURCE}:/label-studio/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8084/health" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "${LS_CPU_LIMIT:-1}"
+          memory: "${LS_MEMORY_LIMIT:-2048M}"
 
   # Label Studio auto labeling
   ml-backend:
@@ -169,11 +218,12 @@ services:
       - YOLO_MODEL=${YOLO_MODEL}
       - DEVICE=${DEVICE:-cuda}
       - ALLOWED_LABEL_FIELDS=label_body_keypoints,label_foot_keypoints,label_left_hand_keypoints,label_right_hand_keypoints
+#      - ALLOWED_LABEL_FIELDS=label_left_hand_keypoints,label_right_hand_keypoints
       - MIN_BBOX_AREA_RATIO=${MIN_BBOX_AREA_RATIO:-0.}
       - SCORE_THRESHOLD=${SCORE_THRESHOLD:-0.}
       - KPT_THRESHOLD=${KPT_THRESHOLD:-0.}
       - READY_WAIT_TIMEOUT_S=${READY_WAIT_TIMEOUT_S:-120}
-      - MODEL_VERSION-${MODEL_VERSION:-v1.0.0}
+      - MODEL_VERSION=${MODEL_VERSION:-v1.0.0}
     ports:
       - "${ML_BACKEND_PORT:-9090}:9090"
     depends_on:
@@ -190,11 +240,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "${CPU_LIMIT:-4}"
-          memory: "${MEMORY_LIMIT:-2048M}"
+          cpus: "${ML_CPU_LIMIT:-4}"
+          memory: "${ML_MEMORY_LIMIT:-4096M}"
         reservations:
-          cpus: "${CPU_RESERVATION:-1}"
-          memory: "${MEMORY_RESERVATION:-2048M}"
+          cpus: "${ML_CPU_RESERVATION:-1}"
+          memory: "${ML_MEMORY_RESERVATION:-2048M}"
           devices:
             - driver: nvidia
               count: 1
@@ -222,17 +272,20 @@ services:
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      MLFLOW_FLASK_SERVER_SECRET_KEY: ${MLFLOW_FLASK_SERVER_SECRET_KEY}
+      MLFLOW_AUTH_CONFIG_PATH: /mlflow/auth_config.ini
     volumes:
       - ${MLFLOW_DATA_PATH}:/mlflow
     entrypoint: >
-      /bin/sh -c "pip install boto3 && mlflow server
+      /bin/sh -c "pip install boto3 'mlflow[auth]' && mlflow server
       --backend-store-uri sqlite:////mlflow/mlflow.db
       --default-artifact-root s3://mlflow-artifacts
       --serve-artifacts
       --host 0.0.0.0
       --port 8082
       --allowed-hosts '*'
-      --cors-allowed-origins '*'"
+      --cors-allowed-origins '*'
+      --app-name basic-auth"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8082/health" ]
       interval: 15s
@@ -242,8 +295,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "${CPU_LIMIT:-1}"
-          memory: "${MEMORY_LIMIT:-4096M}"
+          cpus: "${MLFLOW_CPU_LIMIT:-1}"
+          memory: "${MLFLOW_MEMORY_LIMIT:-4096M}"
 
 networks:
   mlops-net:

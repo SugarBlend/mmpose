@@ -1,4 +1,5 @@
 import torch
+from typing import Any
 
 def _patched_torch_load(*args, **kwargs) -> Any:
     kwargs.setdefault("weights_only", False)
@@ -12,8 +13,9 @@ import gc
 import time
 
 from utils import make_rectanglelabels, make_keypointlabels, get_ls_fields
+from skeleton_info import (COCO_HALPE26_SKELETON_INFO, COCO_HALPE136_SKELETON_INFO, COCO_SKELETON_INFO,
+                           COCO_WHOLEBODY_SKELETON_INFO, GOLIATH_SKELETON_INFO)
 from logger import get_logger
-from typing import Any
 
 import os
 import threading
@@ -82,6 +84,9 @@ class PoseEstimationModel(LabelStudioMLBase):
     _device: str = os.getenv("DEVICE", "cuda:0")
     min_bbox_area_ratio: float = float(os.getenv("MIN_BBOX_AREA_RATIO", "0.05"))
 
+    _draw_skeleton_relations: bool = os.getenv("DRAW_SKELETON_RELATIONS", "true").lower() in ("1", "true", "yes")
+    _relation_direction: str = os.getenv("RELATION_DIRECTION", "bi")  # "left" | "right" | "bi"
+
     # How long predict() will wait for models to become ready before failing.
     # Covers the race where an annotate request arrives right after
     # Validate&Save while the (re)load is still running in the background.
@@ -117,6 +122,14 @@ class PoseEstimationModel(LabelStudioMLBase):
     # even though a model is already loaded and "ready" at the class level.
     _detector: YOLODetector | None = None
     _pose_estimator: MMPoseEstimator | None = None
+
+    correspondence = {
+        17: COCO_SKELETON_INFO,
+        26: COCO_HALPE26_SKELETON_INFO,
+        133: COCO_WHOLEBODY_SKELETON_INFO,
+        136: COCO_HALPE136_SKELETON_INFO,
+        308: GOLIATH_SKELETON_INFO
+    }
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -344,6 +357,14 @@ class PoseEstimationModel(LabelStudioMLBase):
             )
         return bboxes[keep_mask]
 
+    def _make_relation(self, from_id: str, to_id: str) -> dict[str, Any]:
+        return {
+            "from_id": from_id,
+            "to_id": to_id,
+            "type": "relation",
+            "direction": self._relation_direction,
+        }
+
     def predict(self, tasks: list[dict[str, Any]], context: dict | None = None, **kwargs) -> ModelResponse:
         self._wait_until_ready()
 
@@ -398,6 +419,7 @@ class PoseEstimationModel(LabelStudioMLBase):
             return PredictionValue(result=[], score=0.)
 
         label_fields, joint_names = get_ls_fields(self._num_joints)
+        skeleton = self.correspondence.get(self._num_joints) if self._draw_skeleton_relations else {}
 
         results: list[dict[str, Any]] = []
         for bbox, kpts, kpt_scores in zip(bboxes, keypoints, scores):
@@ -413,7 +435,9 @@ class PoseEstimationModel(LabelStudioMLBase):
             ).split(","))
             self.logger.debug(f"Allowed label fields: {allowed_from_names}")
 
-            for kpt_name, kpt_xy, kpt_score in zip(joint_names, kpts, kpt_scores):
+            kpt_id_by_index: dict[int, str] = {}
+
+            for idx, (kpt_name, kpt_xy, kpt_score) in enumerate(zip(joint_names, kpts, kpt_scores)):
                 if float(kpt_score) < self.kpt_thresh:
                     continue
 
@@ -421,16 +445,36 @@ class PoseEstimationModel(LabelStudioMLBase):
                 if from_name not in allowed_from_names:
                     continue
 
-                results.append(
-                    make_keypointlabels(
-                        kx=float(kpt_xy[0]), ky=float(kpt_xy[1]),
-                        img_w=img_w, img_h=img_h,
-                        kpt_name=kpt_name,
-                        from_name=from_name,
-                        rect_id=rect_id,
-                        score=float(kpt_score),
-                    ),
+                kp_result = make_keypointlabels(
+                    kx=float(kpt_xy[0]), ky=float(kpt_xy[1]),
+                    img_w=img_w, img_h=img_h,
+                    kpt_name=kpt_name,
+                    from_name=from_name,
+                    rect_id=rect_id,
+                    score=float(kpt_score),
                 )
+
+                if not kp_result.get("id"):
+                    kp_result["id"] = str(uuid.uuid4())
+
+                results.append(kp_result)
+                kpt_id_by_index[idx] = kp_result["id"]
+
+            if self._draw_skeleton_relations:
+                added_pairs: set[tuple[str, str]] = set()
+                for bone in skeleton.values():
+                    a_idx, b_idx = bone["link"]
+                    if a_idx not in kpt_id_by_index or b_idx not in kpt_id_by_index:
+                        continue
+
+                    from_id = kpt_id_by_index[a_idx]
+                    to_id = kpt_id_by_index[b_idx]
+                    pair_key = tuple(sorted((from_id, to_id)))
+                    if pair_key in added_pairs:
+                        continue
+                    added_pairs.add(pair_key)
+
+                    results.append(self._make_relation(from_id, to_id))
 
         valid = scores[scores >= self.kpt_thresh]
         overall_score = float(np.mean(valid)) if len(valid) else 0.0
