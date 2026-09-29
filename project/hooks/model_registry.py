@@ -3,11 +3,12 @@ import mlflow.pytorch
 from mmengine.hooks import Hook
 from mmengine.registry import HOOKS
 from mmengine.runner import Runner
+import torch
 import torch.distributed as dist
 import subprocess
+import re
 from pathlib import Path
 import json
-import yaml
 
 
 def is_main_process() -> bool:
@@ -18,34 +19,29 @@ def sh(cmd: str) -> str:
     return subprocess.check_output(cmd, shell=True, text=True).strip()
 
 
-def load_dvc_md5(path: str) -> str:
-    meta = yaml.safe_load(Path(path).read_text())
-    return meta["outs"][0]["md5"]
-
-
 @HOOKS.register_module()
 class MLflowModelRegistryHook(Hook):
-    mlflow.enable_system_metrics_logging()
-
     def __init__(
         self,
-        register_on_metric: str
+        register_on_metric: str,
     ) -> None:
         self.register_on_metric = register_on_metric
-        self._best_metric = -1.0
+
         self._run_id = None
         self._vis_backend = None
 
-    @staticmethod
-    def log_dataset_info() -> None:
+        self._best_metric = -1.0
+        self._best_epoch = None
+        self._best_ckpt_path: Path | None = None
+        self._dataset_tag = None
+
+    def log_dataset_info(self) -> None:
         git_commit = sh("git rev-parse HEAD")
         git_commit_short = sh("git rev-parse --short HEAD")
         git_branch = sh("git rev-parse --abbrev-ref HEAD")
         git_tag = sh("git tag --points-at HEAD") or "no-tag"
         git_dataset_tag = sh("git tag --list 'dataset/v*' --sort=-version:refname | head -1") or "unknown"
-
-        # split_dvc_path = "project/annotations/split.dvc"
-        # split_md5 = load_dvc_md5(split_dvc_path)
+        self._dataset_tag = git_dataset_tag
         split_dir = Path("project/annotations/custom")
 
         stats = {}
@@ -72,7 +68,6 @@ class MLflowModelRegistryHook(Hook):
             "git.commit_short": git_commit_short,
             "git.branch": git_branch,
             "git.tag": git_tag,
-            # "dvc.split_md5": split_md5,
             "dataset.version": git_dataset_tag,
             "dataset.train_images": stats.get("train", {}).get("images", 0),
             "dataset.train_annotations": stats.get("train", {}).get("annotations", 0),
@@ -112,45 +107,110 @@ class MLflowModelRegistryHook(Hook):
                 "Check that SafeMLflowVisBackend integrate in config visualizer."
             )
 
-    def after_val_epoch(self, runner: Runner, metrics: dict[str, float]) -> None:
+    def _resolve_best_checkpoint(self, runner: Runner) -> None:
+        best_score = runner.message_hub.get_info("best_score")
+        best_ckpt = runner.message_hub.get_info("best_ckpt")
+
+        if best_ckpt:
+            self._best_metric = float(best_score) if best_score is not None else self._best_metric
+            self._best_ckpt_path = Path(best_ckpt)
+            match = re.search(r"epoch_(\d+)", Path(best_ckpt).name)
+            self._best_epoch = int(match.group(1)) if match else runner.epoch + 1
+            return
+
+        candidates = sorted(Path(runner.work_dir).glob("best_*.pth"))
+        if candidates:
+            ckpt_path = candidates[-1]
+            self._best_ckpt_path = ckpt_path
+            match = re.search(r"epoch_(\d+)", ckpt_path.name)
+            self._best_epoch = int(match.group(1)) if match else runner.epoch + 1
+            if best_score is not None:
+                self._best_metric = float(best_score)
+            return
+
+        self._best_ckpt_path = None
+        self._best_epoch = None
+
+    def after_run(self, runner: Runner) -> None:
         if not is_main_process():
             return
 
-        current = metrics.get(self.register_on_metric, -1.0)
-        previous_best = runner.message_hub.get_info("best_score") or -1.0
-        if current <= previous_best:
-            runner.logger.info(
-                f"[{__class__.__name__}] skip to register model in mlflow, reason: current metric "
-                f"'{self.register_on_metric}' - {round(current, 4)}, but highest - {round(previous_best, 4)}"
+        self._resolve_best_checkpoint(runner)
+
+        if self._best_epoch is None or self._best_ckpt_path is None:
+            runner.logger.warning(
+                f"[{self.__class__.__name__}] best checkpoint not found (check that "
+                "CheckpointHook has save_best enabled), skip MLflow registration."
             )
             return
 
-        self._best_metric = current
-        runner.logger.info(
-            f"[{__class__.__name__}] New best evaluation for '{self.register_on_metric}' - {current:.4f}, "
-            f"try to register in mlflow."
-        )
-        self._register_model(runner)
+        if not self._best_ckpt_path.exists():
+            runner.logger.warning(
+                f"[{self.__class__.__name__}] best checkpoint file not found at "
+                f"{self._best_ckpt_path}, skip MLflow registration."
+            )
+            return
 
-    def _register_model(self, runner: Runner) -> None:
+        runner.logger.info(
+            f"[{self.__class__.__name__}] loading best checkpoint (epoch {self._best_epoch}, "
+            f"{self.register_on_metric}={self._best_metric:.4f}) and registering in MLflow."
+        )
+
+        ckpt = torch.load(self._best_ckpt_path, map_location="cpu")
+        state_dict = ckpt.get("state_dict", ckpt)
+
         model = runner.model
         model.eval()
+        missing, unexpected = model.load_state_dict(state_dict, strict=False)
+        if missing or unexpected:
+            runner.logger.warning(
+                f"[{self.__class__.__name__}] load_state_dict mismatch — "
+                f"missing: {len(missing)}, unexpected: {len(unexpected)}"
+            )
 
-        artifact_path = f'checkpoints/epoch_{runner.epoch + 1:03d}'
-
-        mlflow.pytorch.log_model(
-            pytorch_model=model,
-            artifact_path=artifact_path,
-        )
+        self._register_model(runner)
 
         model.train()
 
+    def _register_model(self, runner: Runner) -> None:
+        model = runner.model
+
+        artifact_name = f"epoch_{self._best_epoch:03d}"
+
+        try:
+            model_info = mlflow.pytorch.log_model(
+                pytorch_model=model,
+                name=artifact_name,
+            )
+            model_uri = model_info.model_uri
+            model_id = model_info.model_id
+
+            train_dataset = mlflow.data.meta_dataset.MetaDataset(
+                source=mlflow.data.http_dataset_source.HTTPDatasetSource(url="local://project/annotations/custom"),
+                name=self._dataset_tag or "unknown",
+            )
+            mlflow.log_metrics(
+                metrics={self.register_on_metric: self._best_metric},
+                model_id=model_id,
+                dataset=train_dataset,
+            )
+        except (AttributeError, TypeError) as e:
+            runner.logger.warning(
+                f"[{self.__class__.__name__}] LoggedModel API unavailable ({e}), "
+                "falling back to legacy artifact_path-based logging."
+            )
+            mlflow.pytorch.log_model(
+                pytorch_model=model,
+                artifact_path=f"checkpoints/{artifact_name}",
+            )
+            model_uri = f"runs:/{self._run_id}/checkpoints/{artifact_name}"
+
         mv = mlflow.register_model(
-            model_uri=f'runs:/{self._run_id}/{artifact_path}',
+            model_uri=model_uri,
             name=self._vis_backend._exp_name,
             tags={
                 self.register_on_metric: str(round(self._best_metric, 4)),
-                'epoch': str(runner.epoch + 1),
+                "epoch": str(self._best_epoch),
                 # 'dvc_hash': self.dataset_dvc_hash,
             }
         )
@@ -167,5 +227,5 @@ class MLflowModelRegistryHook(Hook):
         )
 
         runner.logger.info(
-            f"[{__class__.__name__}] Registered: {mv.name} - v{mv.version}"
+            f"[{self.__class__.__name__}] Registered: {mv.name} - v{mv.version}"
         )
