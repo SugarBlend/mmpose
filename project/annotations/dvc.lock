@@ -266,7 +266,7 @@ stages:
     outs:
     - path: labelstudio_anns/halpe26
       hash: md5
-      md5: 04ee4a1a933a9dbae0ffcb485fe8c66d.dir
+      md5: ef59da11d7ef0567c353b6747998808f.dir
       size: 11185169
       nfiles: 19
   convert_ls_to_coco@halpe136:
@@ -281,7 +281,7 @@ stages:
     outs:
     - path: labelstudio_anns/halpe136
       hash: md5
-      md5: 99975c7a8471ca19a436614a53b26453.dir
+      md5: 4cce0c893a871b971d8d6831e2336381.dir
       size: 16641028
       nfiles: 23
   assign_splits:
@@ -297,12 +297,12 @@ stages:
       size: 16205
     - path: labelstudio_anns/halpe136
       hash: md5
-      md5: 99975c7a8471ca19a436614a53b26453.dir
+      md5: 4cce0c893a871b971d8d6831e2336381.dir
       size: 16641028
       nfiles: 23
     - path: labelstudio_anns/halpe26
       hash: md5
-      md5: 04ee4a1a933a9dbae0ffcb485fe8c66d.dir
+      md5: ef59da11d7ef0567c353b6747998808f.dir
       size: 11185169
       nfiles: 19
     params:
@@ -331,7 +331,7 @@ stages:
       size: 16205
     - path: labelstudio_anns/halpe136
       hash: md5
-      md5: 99975c7a8471ca19a436614a53b26453.dir
+      md5: 4cce0c893a871b971d8d6831e2336381.dir
       size: 16641028
       nfiles: 23
     - path: split_manifest.json
@@ -351,3 +351,34 @@ stages:
       hash: md5
       md5: ffde85cf0ac3e45e38c0918aa8669896
       size: 1754216
+  split_coco@halpe26:
+    cmd: python ./dataset_split.py --frozen_manifest --annotations_dir 
+      labelstudio_anns/halpe26 --output_dir custom/halpe26 --manifest 
+      split_manifest.json --patterns ".*"
+    deps:
+    - path: ./dataset_split.py
+      hash: md5
+      md5: b5cc27742af230383b5ed46f4f38558c
+      size: 16205
+    - path: labelstudio_anns/halpe26
+      hash: md5
+      md5: ef59da11d7ef0567c353b6747998808f.dir
+      size: 11185169
+      nfiles: 19
+    - path: split_manifest.json
+      hash: md5
+      md5: 3a9e17e36a2239dd302323083fadf5d4
+      size: 259938
+    outs:
+    - path: custom/halpe26/test.json
+      hash: md5
+      md5: bd8653f17a18a281c90684f0bc6f30e5
+      size: 619286
+    - path: custom/halpe26/train.json
+      hash: md5
+      md5: 802f1abc655944c90b47526b71bd3a24
+      size: 4782716
+    - path: custom/halpe26/val.json
+      hash: md5
+      md5: 56a6f9e853cdf4aa4958d2cba70323ff
+      size: 1320242
