@@ -1,2 +1,3 @@
 /labelstudio*
 *.json
+!split_manifest.json

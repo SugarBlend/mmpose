@@ -192,28 +192,29 @@ stages:
       nfiles: 8
   convert_ls_to_coco:
     cmd: "python ../label_studio/tasks2json.py --root-dataset-path s3://datasets --output_folder
-      labelstudio_anns/halpe26 --patterns \"^Pose Annotation*,^Foots Pose Annotation*\"\
-      \n"
+      labelstudio_anns/halpe26 --patterns \"^Pose Annotation*,^Foots Pose Annotation*,Outsource\"\
+      \ --data_type annotations\n"
     deps:
     - path: ../label_studio/tasks2json.py
       hash: md5
-      md5: 96b0af222be0e3905061f8820d9564a6
-      size: 11949
+      md5: 5c0af40d222571a2668d23fd73809fbf
+      size: 14182
     params:
       params.yaml:
         convert.ls_output_folder: labelstudio_anns/halpe26
-        convert.search_patterns: ^Pose Annotation*,^Foots Pose Annotation*
+        convert.search_patterns: ^Pose Annotation*,^Foots Pose 
+          Annotation*,Outsource
     outs:
     - path: labelstudio_anns/halpe26
       hash: md5
-      md5: 0296cd1e681b2f8b3a540df060521dd9.dir
-      size: 9761397
-      nfiles: 18
+      md5: 31b1b2d149f0f37966861e0de2cd9ad5.dir
+      size: 11185169
+      nfiles: 19
   split_coco:
-    cmd: "python ../label_studio/coco_split.py  --annotations_dir labelstudio_anns/halpe26\
-      \  --output_dir custom  --train_ratio 0.7  --val_ratio 0.2  --test_ratio 0.1\
-      \  --seed 42  --patterns \"^Pose Annotation*,^Foots Pose Annotation*\" --split_mode
-      images\n"
+    cmd: "python dataset_split.py --annotations_dir labelstudio_anns/halpe26 --output_dir
+      custom --manifest split_manifest.json --train_ratio 0.7 --val_ratio 0.2 --test_ratio
+      0.1 --seed 42 --patterns \"^Pose Annotation*,^Foots Pose Annotation*,Outsource\"\
+      \ --group_regex \"^([^/]+/[^/]+)/\" --chunk_frames 30\n"
     deps:
     - path: ../label_studio/coco_split.py
       hash: md5
@@ -221,29 +222,35 @@ stages:
       size: 10829
     - path: labelstudio_anns/halpe26
       hash: md5
-      md5: 0296cd1e681b2f8b3a540df060521dd9.dir
-      size: 9761397
-      nfiles: 18
+      md5: 31b1b2d149f0f37966861e0de2cd9ad5.dir
+      size: 11185169
+      nfiles: 19
     params:
       params.yaml:
-        convert.ls_output_folder: labelstudio_anns/halpe26
-        convert.search_patterns: ^Pose Annotation*,^Foots Pose Annotation*
-        convert.user_output_folder: custom
-        split.mode: images
-        split.seed: 42
-        split.test_ratio: 0.1
-        split.train_ratio: 0.7
-        split.val_ratio: 0.2
+        convert.search_patterns: ^Pose Annotation*,^Foots Pose 
+          Annotation*,Outsource
+        split:
+          train_ratio: 0.7
+          val_ratio: 0.2
+          test_ratio: 0.1
+          seed: 42
+          manifest: split_manifest.json
+          group_regex: ^([^/]+/[^/]+)/
+          chunk_frames: 30
     outs:
     - path: custom/test.json
       hash: md5
-      md5: 903962f39e92224419e1e0d626ef171e
-      size: 1006662
+      md5: de99ebd7035910641f683b4ce21e77b0
+      size: 1030601
     - path: custom/train.json
       hash: md5
-      md5: e24cb7869a020c77ce8f2e44ee174912
-      size: 6797886
+      md5: 804fd71de7c9dd9e4bc414319f518aab
+      size: 7948539
     - path: custom/val.json
       hash: md5
-      md5: 0ce15667963bd05aacdac8b06d0d919a
-      size: 1952500
+      md5: d8342b412323d122d649e06d4d015c17
+      size: 2201350
+    - path: split_manifest.json
+      hash: md5
+      md5: 8652aabc8dc5ea27a8c1c73b58f5f456
+      size: 237207

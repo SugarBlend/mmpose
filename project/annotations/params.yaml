@@ -28,8 +28,8 @@ datasets:
 
 
 convert:
-  search_patterns: ^Pose Annotation*,^Foots Pose Annotation*
-  ls_output_folder: labelstudio_anns/halpe26
+  search_patterns: ^Pose Annotation*,^Foots Pose Annotation*,^Outsource*
+  ls_output_folder: "labelstudio_anns/halpe26"
   user_output_folder: custom
 
 split:
@@ -37,4 +37,6 @@ split:
   val_ratio: 0.2
   test_ratio: 0.1
   seed: 42
-  mode: images
+  manifest: split_manifest.json
+  group_regex: "^([^/]+/[^/]+)/"
+  chunk_frames: 30

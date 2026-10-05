@@ -19,9 +19,12 @@ stages:
   convert_ls_to_coco:
     # permanent link to "datasets" bucket in S3/Minio storage
     cmd: >
-      python ../label_studio/tasks2json.py --root-dataset-path s3://datasets --output_folder ${convert.ls_output_folder}
+      python ../label_studio/tasks2json.py 
+      --root-dataset-path s3://datasets 
+      --output_folder ${convert.ls_output_folder}
       --patterns "${convert.search_patterns}"
-
+      --data_type annotations
+    always_changed: true
     deps:
       - ../label_studio/tasks2json.py
     params:
@@ -33,28 +36,27 @@ stages:
 
   split_coco:
     cmd: >
-      python ../label_studio/coco_split.py 
-      --annotations_dir ${convert.ls_output_folder} 
-      --output_dir ${convert.user_output_folder} 
-      --train_ratio ${split.train_ratio} 
-      --val_ratio ${split.val_ratio} 
-      --test_ratio ${split.test_ratio} 
-      --seed ${split.seed} 
+      python ./dataset_split.py
+      --annotations_dir ${convert.ls_output_folder}
+      --output_dir ${convert.user_output_folder}
+      --manifest ${split.manifest}
+      --train_ratio ${split.train_ratio}
+      --val_ratio ${split.val_ratio}
+      --test_ratio ${split.test_ratio}
+      --seed ${split.seed}
       --patterns "${convert.search_patterns}"
-      --split_mode ${split.mode}
+      --group_regex "${split.group_regex}"
+      --chunk_frames "${split.chunk_frames}"
     deps:
       - ../label_studio/coco_split.py
       - ${convert.ls_output_folder}
     params:
-      - split.train_ratio
-      - split.val_ratio
-      - split.test_ratio
-      - split.seed
-      - split.mode
+      - split
       - convert.search_patterns
-      - convert.ls_output_folder
-      - convert.user_output_folder
     outs:
+      - ${split.manifest}:
+          persist: true
+          cache: false
       - ${convert.user_output_folder}/train.json
       - ${convert.user_output_folder}/val.json
       - ${convert.user_output_folder}/test.json

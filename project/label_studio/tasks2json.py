@@ -28,7 +28,7 @@ class LSConverter(object):
         self._api_key = api_key or os.getenv("LABEL_STUDIO_API_KEY")
         self.client = self._make_client()
         self.label_values: None | list[str] = None # represent ordered names of keypoints
-        self._user_emails: dict[int, str] = {}  # cache: user id -> email
+        self._user_emails: dict[int, str] = {}
 
     def _make_client(self) -> LabelStudio:
         return LabelStudio(base_url=self._url, api_key=self._api_key)
@@ -324,7 +324,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert Label Studio projects to COCO via snapshot export")
     parser.add_argument("--root-dataset-path", default="s3://datasets",
                         help="The base path relative to which paths to the data described in the annotation are constructed.")
-    parser.add_argument("--output_folder", default="../annotations/labelstudio",
+    parser.add_argument("--output_folder", default="../annotations/labelstudio_anns/halpe26",
                         help="Folder to save COCO JSONs")
     parser.add_argument("--patterns", default="^Pose Annotation,^Foots Pose Annotation,^Outsource*",
                         help="Regular expression for filtering project by them name.")
