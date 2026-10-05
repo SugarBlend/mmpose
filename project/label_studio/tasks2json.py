@@ -7,6 +7,8 @@ from datetime import datetime
 import numpy as np
 import xml.etree.ElementTree as ET
 from label_studio_sdk import LabelStudio
+from label_studio_sdk.types.serialization_options_request import SerializationOptionsRequest, SerializationOptionRequest
+from label_studio_sdk.types.all_roles_project_list import AllRolesProjectList
 import time
 from typing import Any
 from urllib.parse import unquote
@@ -22,11 +24,19 @@ logging.basicConfig(level=getattr(logging, os.getenv("LOG_LEVEL", default="INFO"
 
 class LSConverter(object):
     def __init__(self, url: str | None = None, api_key: str | None = None) -> None:
-        self.client = LabelStudio(
-            base_url=url or os.getenv("LABEL_STUDIO_URL"),
-            api_key=api_key or os.getenv("LABEL_STUDIO_API_KEY")
-        )
+        self._url = url or os.getenv("LABEL_STUDIO_URL")
+        self._api_key = api_key or os.getenv("LABEL_STUDIO_API_KEY")
+        self.client = self._make_client()
         self.label_values: None | list[str] = None # represent ordered names of keypoints
+        self._user_emails: dict[int, str] = {}  # cache: user id -> email
+
+    def _make_client(self) -> LabelStudio:
+        return LabelStudio(base_url=self._url, api_key=self._api_key)
+
+    def _get_user_email(self, user_id: int) -> str:
+        if user_id not in self._user_emails:
+            self._user_emails[user_id] = self.client.users.get(user_id).email
+        return self._user_emails[user_id]
 
     @staticmethod
     def _parse_labels(config_path: str) -> list[str | None]:
@@ -57,6 +67,7 @@ class LSConverter(object):
 
         pb = tqdm(total=len(tasks), desc="Progress", leave=True, ncols=80, unit="task")
         for task in tasks:
+            pb.update()
             image_name = Path(unquote(task["data"]["image"])).relative_to(root_dataset_path).as_posix()
             image_id = task["id"]
 
@@ -73,12 +84,9 @@ class LSConverter(object):
 
             for annotation in sorted_annotations[-1:]:
 
-                if 'completed_by' in annotation:
-                    upd_user = self.client.users.get(annotation["completed_by"]).email
-                    if upd_user not in users:
-                        users[upd_user] = 1
-                    else:
-                        users[upd_user] += 1
+                if annotation.get("completed_by") is not None:
+                    upd_user = self._get_user_email(annotation["completed_by"])
+                    users[upd_user] = users.get(upd_user, 0) + 1
 
                 if annotation.get("was_cancelled"):
                     logger.debug(f"Skipping cancelled annotation for task {pb.n}, '{image_name}'")
@@ -152,7 +160,7 @@ class LSConverter(object):
 
                 for label in polygons:
                     self.process_polygon(label, annotations)
-            pb.update()
+        pb.close()
 
         users: list[str] = [k for k, v in sorted(users.items(), key=lambda x: x[1], reverse=True)]
         description = {
@@ -226,49 +234,90 @@ class LSConverter(object):
             "segmentation": [[coord for point in points_abs for coord in point]]
         })
 
-    def _export_project_annotations(self, project_id: int) -> list[dict[str, Any]]:
-        export_job = self.client.projects.exports.create(
-            id=project_id,
-            title=f"Export_{project_id}",
-            serialization_options={
-                "predictions": {"only_id": False},
-                "drafts": {"only_id": False},
-            },
+    def _latest_task_update(self, project_id: int) -> datetime | None:
+        pager = self.client.tasks.list(
+            project=project_id,
+            page_size=1,
+            fields="task_only",
+            query=json.dumps({"ordering": ["-tasks:updated_at"]}),
         )
-        export_id = export_job.id
-        logger.info(f"Snapshot export created: {export_id}")
+        task = next(iter(pager.items), None)
+        return task.updated_at if task else None
 
-        while True:
-            job = self.client.projects.exports.get(id=project_id, export_pk=export_id)
-            if job.status == "completed":
-                logger.info(f"Export completed: {export_id}")
-                break
-            elif job.status == "failed":
-                raise RuntimeError(f"Export failed for project {project_id}")
-            else:
-                logger.info(f"Waiting for export {export_id}, status: {job.status}")
+    @staticmethod
+    def _snapshot_title(project) -> str:
+        return (f"Export_id:{project.id}_tasks:{project.task_number}"
+                f"_anns:{project.total_annotations_number}_preds:{project.total_predictions_number}")
+
+    def _find_reusable_export(self, project: AllRolesProjectList) -> int | None:
+        # Try to find current version snapshot in label studio storage
+        title = self._snapshot_title(project)
+        exports = [export for export in self.client.projects.exports.list(id=project.id)
+                   if export.status == "completed" and export.title == title]
+        if not exports:
+            return None
+
+        last = max(exports, key=lambda e: e.created_at)
+        last_update = self._latest_task_update(project.id)
+        if last_update is not None and last_update > last.created_at:
+            return None
+
+        return last.id
+
+    def _export_project_annotations(self, project) -> list[dict[str, Any]]:
+        # Firstly, locate the export cache, if it does not exist, run the snapshot export
+        export_id = self._find_reusable_export(project)
+
+        if export_id is not None:
+            logger.info(f"No changes since snapshot {export_id}, reusing it")
+        else:
+            serialization_options = SerializationOptionsRequest(
+                drafts=SerializationOptionRequest(only_id=False),
+                predictions=SerializationOptionRequest(only_id=False)
+            )
+            export_job = self.client.projects.exports.create(
+                id=project.id,
+                title=self._snapshot_title(project),
+                serialization_options=serialization_options
+            )
+            export_id = export_job.id
+            logger.info(f"Snapshot export created: {export_id}")
+            while True:
+                job = self.client.projects.exports.get(id=project.id, export_pk=export_id)
+
+                if job.status == "completed":
+                    break
+
+                if job.status == "failed":
+                    raise RuntimeError(f"Export failed for project {project.id}")
+
                 time.sleep(2)
 
-        tasks = self.client.projects.exports.download(id=project_id, export_pk=export_id, export_type="JSON")
-        tasks_json = json.loads(b"".join(tasks).decode("utf-8"))
-        return tasks_json
+        chunks = self.client.projects.exports.download(id=project.id, export_pk=export_id, export_type="JSON")
+        return json.loads(b"".join(chunks).decode("utf-8"))
 
-    def process_annotations(self, output_dir: str = "outputs") -> None:
-        patterns = args.patterns.split(",")
+    def process_annotations(
+        self,
+        patterns: str,
+        root_dataset_path: str,
+        output_dir: str = "outputs",
+        data_type: str = "annotations"
+    ) -> None:
+        patterns = patterns.split(",")
         compilers = [re.compile(pattern) for pattern in patterns]
         for project in self.client.projects.list().items:
             if any(compiler.search(project.title) for compiler in compilers):
-                counter = project.total_annotations_number if args.data_type == "annotations" else project.total_predictions_number
+                counter = project.total_annotations_number if data_type == "annotations" else project.total_predictions_number
                 if not counter:
-                    logger.warning(f"Skip empty project: '{project.title}', doesn't detect any {args.data_type}.")
+                    logger.warning(f"Skip empty project: '{project.title}', doesn't detect any {data_type}.")
                     continue
 
                 logger.info(f"Processing project: {project.title} (id={project.id})")
                 # Fetch label config directly from project settings
                 self.label_values = self._parse_labels(project.label_config)
-                tasks = self._export_project_annotations(project.id)
-                self.tasks2json(tasks, project.title, data_type=args.data_type,
-                                root_dataset_path=args.root_dataset_path, output_dir=output_dir)
+                tasks = self._export_project_annotations(project)
+                self.tasks2json(tasks, project.title, data_type=data_type,
+                                root_dataset_path=root_dataset_path, output_dir=output_dir)
 
 
 if __name__ == "__main__":
@@ -277,12 +326,8 @@ if __name__ == "__main__":
                         help="The base path relative to which paths to the data described in the annotation are constructed.")
     parser.add_argument("--output_folder", default="../annotations/labelstudio",
                         help="Folder to save COCO JSONs")
-    # parser.add_argument("--name_pattern", default=".*",
-    #                     help="Regular expression for filtering project by them name.")
-    parser.add_argument("--patterns", default="^Pose Annotation,^Foots Pose Annotation",
+    parser.add_argument("--patterns", default="^Pose Annotation,^Foots Pose Annotation,^Outsource*",
                         help="Regular expression for filtering project by them name.")
-    # parser.add_argument("--name_pattern", default=r"Hands\s\+\sBody Pose Annotation",
-    #                     help="Regular expression for filtering project by them name.")
     parser.add_argument("--data_type", choices=["predictions", "annotations"], default="annotations",
                         help="'Predictions' are the type of data obtained from LS from an auto-labeler, "
                              "'annotations' are data from LS that are marked up by people. ")
@@ -290,4 +335,6 @@ if __name__ == "__main__":
 
     load_dotenv()
     converter = LSConverter()
-    converter.process_annotations(output_dir=args.output_folder)
+    converter.process_annotations(
+        args.patterns, args.root_dataset_path, args.output_folder, args.data_type
+    )
