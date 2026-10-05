@@ -254,3 +254,100 @@ stages:
       hash: md5
       md5: 8652aabc8dc5ea27a8c1c73b58f5f456
       size: 237207
+  convert_ls_to_coco@halpe26:
+    cmd: python ../label_studio/tasks2json.py --root-dataset-path s3://datasets 
+      --output_folder labelstudio_anns/halpe26 --patterns "^Pose 
+      Annotation*,^Foots Pose Annotation*,^Outsource*" --data_type annotations
+    deps:
+    - path: ../label_studio/tasks2json.py
+      hash: md5
+      md5: e6eb88e3a8a8c33024806119857292e6
+      size: 14940
+    outs:
+    - path: labelstudio_anns/halpe26
+      hash: md5
+      md5: 04ee4a1a933a9dbae0ffcb485fe8c66d.dir
+      size: 11185169
+      nfiles: 19
+  convert_ls_to_coco@halpe136:
+    cmd: python ../label_studio/tasks2json.py --root-dataset-path s3://datasets 
+      --output_folder labelstudio_anns/halpe136 --patterns ".*" --data_type 
+      annotations
+    deps:
+    - path: ../label_studio/tasks2json.py
+      hash: md5
+      md5: e6eb88e3a8a8c33024806119857292e6
+      size: 14940
+    outs:
+    - path: labelstudio_anns/halpe136
+      hash: md5
+      md5: 99975c7a8471ca19a436614a53b26453.dir
+      size: 16641028
+      nfiles: 23
+  assign_splits:
+    cmd: python ./dataset_split.py --assign_only --annotations_dir 
+      labelstudio_anns/halpe26 labelstudio_anns/halpe136 --manifest 
+      split_manifest.json --patterns ".*" --train_ratio 0.7 --val_ratio 0.2 
+      --test_ratio 0.1 --seed 42 --group_regex "^([^/]+/[^/]+)/" --chunk_frames 
+      30
+    deps:
+    - path: ./dataset_split.py
+      hash: md5
+      md5: b5cc27742af230383b5ed46f4f38558c
+      size: 16205
+    - path: labelstudio_anns/halpe136
+      hash: md5
+      md5: 99975c7a8471ca19a436614a53b26453.dir
+      size: 16641028
+      nfiles: 23
+    - path: labelstudio_anns/halpe26
+      hash: md5
+      md5: 04ee4a1a933a9dbae0ffcb485fe8c66d.dir
+      size: 11185169
+      nfiles: 19
+    params:
+      params.yaml:
+        split:
+          train_ratio: 0.7
+          val_ratio: 0.2
+          test_ratio: 0.1
+          seed: 42
+          manifest: split_manifest.json
+          group_regex: ^([^/]+/[^/]+)/
+          chunk_frames: 30
+    outs:
+    - path: split_manifest.json
+      hash: md5
+      md5: 3a9e17e36a2239dd302323083fadf5d4
+      size: 259938
+  split_coco@halpe136:
+    cmd: python ./dataset_split.py --frozen_manifest --annotations_dir 
+      labelstudio_anns/halpe136 --output_dir custom/halpe136 --manifest 
+      split_manifest.json --patterns ".*"
+    deps:
+    - path: ./dataset_split.py
+      hash: md5
+      md5: b5cc27742af230383b5ed46f4f38558c
+      size: 16205
+    - path: labelstudio_anns/halpe136
+      hash: md5
+      md5: 99975c7a8471ca19a436614a53b26453.dir
+      size: 16641028
+      nfiles: 23
+    - path: split_manifest.json
+      hash: md5
+      md5: 3a9e17e36a2239dd302323083fadf5d4
+      size: 259938
+    outs:
+    - path: custom/halpe136/test.json
+      hash: md5
+      md5: c1f91601b2ef80ffdf2ba3637342c195
+      size: 886187
+    - path: custom/halpe136/train.json
+      hash: md5
+      md5: ee0eb36445734eb48dc4b01dba1520f3
+      size: 6699721
+    - path: custom/halpe136/val.json
+      hash: md5
+      md5: ffde85cf0ac3e45e38c0918aa8669896
+      size: 1754216

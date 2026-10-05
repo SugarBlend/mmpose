@@ -27,10 +27,17 @@ datasets:
     ann_relative_path: datasets/WFLW/annotations
 
 
+# Annotation sets from Label Studio. They share images -> ONE split manifest for all of them:
+# an image lands in the same split (train/val/test) in every set.
+annotation_sets:
+  halpe26:
+    search_patterns: ^Pose Annotation*,^Foots Pose Annotation*,^Outsource*
+  halpe136:
+    search_patterns: .*
+
 convert:
-  search_patterns: ^Pose Annotation*,^Foots Pose Annotation*,^Outsource*
-  ls_output_folder: "labelstudio_anns/halpe26"
-  user_output_folder: custom
+  ls_root: labelstudio_anns # labelstudio_anns/<set>/*.json
+  user_root: custom # custom/<set>/{train,val,test}.json
 
 split:
   train_ratio: 0.7
@@ -38,5 +45,5 @@ split:
   test_ratio: 0.1
   seed: 42
   manifest: split_manifest.json
-  group_regex: "^([^/]+/[^/]+)/"
+  group_regex: ^([^/]+/[^/]+)/
   chunk_frames: 30

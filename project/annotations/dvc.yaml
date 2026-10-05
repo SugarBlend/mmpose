@@ -16,47 +16,63 @@ stages:
         - standard/${key}:
             cache: false
 
+  # 1. Label Studio -> COCO, one folder per annotation set
   convert_ls_to_coco:
-    # permanent link to "datasets" bucket in S3/Minio storage
-    cmd: >
-      python ../label_studio/tasks2json.py 
-      --root-dataset-path s3://datasets 
-      --output_folder ${convert.ls_output_folder}
-      --patterns "${convert.search_patterns}"
-      --data_type annotations
-    always_changed: true
-    deps:
-      - ../label_studio/tasks2json.py
-    params:
-      - convert.search_patterns
-      - convert.ls_output_folder
-    outs:
-      - ${convert.ls_output_folder}:
-          cache: false
+    foreach: ${annotation_sets}
+    do:
+      # permanent link to "datasets" bucket in S3/Minio storage
+      cmd: >-
+        python ../label_studio/tasks2json.py
+        --root-dataset-path s3://datasets
+        --output_folder ${convert.ls_root}/${key}
+        --patterns "${item.search_patterns}"
+        --data_type annotations
+      always_changed: true
+      deps:
+        - ../label_studio/tasks2json.py
+      outs:
+        - ${convert.ls_root}/${key}:
+            cache: false
 
-  split_coco:
-    cmd: >
-      python ./dataset_split.py
-      --annotations_dir ${convert.ls_output_folder}
-      --output_dir ${convert.user_output_folder}
+  # 2. ONE manifest for all sets: an image annotated both in halpe26 and halpe136 gets the same split in both
+  assign_splits:
+    cmd: >-
+      python ./dataset_split.py --assign_only
+      --annotations_dir ${convert.ls_root}/halpe26 ${convert.ls_root}/halpe136
       --manifest ${split.manifest}
+      --patterns ".*"
       --train_ratio ${split.train_ratio}
       --val_ratio ${split.val_ratio}
       --test_ratio ${split.test_ratio}
       --seed ${split.seed}
-      --patterns "${convert.search_patterns}"
       --group_regex "${split.group_regex}"
-      --chunk_frames "${split.chunk_frames}"
+      --chunk_frames ${split.chunk_frames}
     deps:
-      - ../label_studio/coco_split.py
-      - ${convert.ls_output_folder}
+      - ./dataset_split.py
+      - ${convert.ls_root}/halpe26
+      - ${convert.ls_root}/halpe136
     params:
       - split
-      - convert.search_patterns
     outs:
       - ${split.manifest}:
           persist: true
           cache: false
-      - ${convert.user_output_folder}/train.json
-      - ${convert.user_output_folder}/val.json
-      - ${convert.user_output_folder}/test.json
+
+  # 3. train/val/test for every set, strictly by the shared manifest (read-only here)
+  split_coco:
+    foreach: ${annotation_sets}
+    do:
+      cmd: >-
+        python ./dataset_split.py --frozen_manifest
+        --annotations_dir ${convert.ls_root}/${key}
+        --output_dir ${convert.user_root}/${key}
+        --manifest ${split.manifest}
+        --patterns ".*"
+      deps:
+        - ./dataset_split.py
+        - ${convert.ls_root}/${key}
+        - ${split.manifest}
+      outs:
+        - ${convert.user_root}/${key}/train.json
+        - ${convert.user_root}/${key}/val.json
+        - ${convert.user_root}/${key}/test.json

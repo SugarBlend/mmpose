@@ -236,12 +236,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Merge COCO JSON files and split into train / val / test with a stable, manifest-based assignment"
     )
-    parser.add_argument("--annotations_dir", default="./labelstudio_anns/halpe26",
-                        help="Directory with COCO JSON files to merge")
+    parser.add_argument("--annotations_dir", nargs="+", default=["./labelstudio_anns/halpe26"],
+                        help="Directory(ies) with COCO JSON files. Several dirs (halpe26 + halpe136) "
+                             "only together with --assign_only")
     parser.add_argument("--output_dir", default="./custom_anns/halpe26",
                         help="Where to save train.json / val.json / test.json")
     parser.add_argument("--manifest", default="split_manifest.json",
                         help="Path to split manifest (file_name -> split).")
+    parser.add_argument("--assign_only", action="store_true",
+                        help="Only add new images of ALL --annotations_dir to the shared manifest, write no splits")
+    parser.add_argument("--frozen_manifest", action="store_true",
+                        help="Read-only manifest: never add images, fail if an image is missing in it")
     parser.add_argument("--train_ratio", type=float, default=0.7)
     parser.add_argument("--val_ratio", type=float, default=0.2)
     parser.add_argument("--test_ratio", type=float, default=0.1)
@@ -267,9 +272,14 @@ def main() -> None:
     if abs(args.train_ratio + args.val_ratio + args.test_ratio - 1.0) > 1e-6:
         parser.error("Ratios must sum to 1.0")
 
-    annotations_dir = Path(args.annotations_dir)
-    if not annotations_dir.is_dir():
-        parser.error(f"Not a directory: {annotations_dir}")
+    annotation_dirs = [Path(d) for d in args.annotations_dir]
+    for d in annotation_dirs:
+        if not d.is_dir():
+            parser.error(f"Not a directory: {d}")
+    if args.assign_only and args.frozen_manifest:
+        parser.error("--assign_only and --frozen_manifest are mutually exclusive")
+    if not args.assign_only and len(annotation_dirs) > 1:
+        parser.error("Several --annotations_dir are only supported with --assign_only")
 
     output_dir = Path(args.output_dir)
     manifest_path = Path(args.manifest)
@@ -283,21 +293,46 @@ def main() -> None:
         manifest = {}
         logger.info("Manifest not found, starting a new one (all images are new)")
 
-    images, annotations, categories = load_coco_files(annotations_dir, args.patterns)
+    if args.frozen_manifest and not manifest_path.exists():
+        parser.error(f"--frozen_manifest: {manifest_path} does not exist")
+
+    # shared manifest for several annotation sets: one image -> one split in every set
+    if args.assign_only:
+        all_images: list[dict] = []
+        for d in annotation_dirs:
+            imgs, _, _ = load_coco_files(d, args.patterns)
+            all_images.extend(imgs)
+        before = len(manifest)
+        added = assign_splits(all_images, manifest, group_regex, args.seed, args.val_ratio, args.test_ratio,
+                              args.chunk_frames, not args.no_stratify)
+        save_manifest(manifest_path, manifest)
+        logger.info(f"Manifest {manifest_path}: {before} -> {len(manifest)} images; new: "
+                    + (", ".join(f"{s}={added[s]}" for s in SPLITS) if added else "none"))
+        return
+
+    images, annotations, categories = load_coco_files(annotation_dirs[0], args.patterns)
     reindex(images, annotations)
 
-    added = assign_splits(images, manifest, group_regex, args.seed, args.val_ratio, args.test_ratio,
-                           args.chunk_frames, not args.no_stratify)
+    if args.frozen_manifest:
+        unknown = sorted({img["file_name"] for img in images} - set(manifest))
+        if unknown:
+            raise SystemExit(f"{len(unknown)} images are not in the frozen manifest {manifest_path} "
+                             f"(run the assign stage first), e.g. {unknown[:3]}")
+        added = Counter()
+    else:
+        added = assign_splits(images, manifest, group_regex, args.seed, args.val_ratio, args.test_ratio,
+                              args.chunk_frames, not args.no_stratify)
     present = {img["file_name"] for img in images}
     missing = sum(1 for fn in manifest if fn not in present)
 
     counts = save_splits(images, annotations, categories, manifest, output_dir)
-    save_manifest(manifest_path, manifest)
+    if not args.frozen_manifest:
+        save_manifest(manifest_path, manifest)
 
     total = sum(counts.values()) or 1
     logger.info("New images: " + (", ".join(f"{s}={added[s]}" for s in SPLITS) if added else "none"))
     logger.info("Actual ratio: " + " / ".join(f"{s} {counts[s] / total:.1%}" for s in SPLITS))
-    if missing:
+    if missing and not args.frozen_manifest:
         logger.warning(f"{missing} images from the manifest are absent in current annotations "
                        f"(kept in the manifest: if they come back, they return to the same split)")
 
